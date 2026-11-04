@@ -226,6 +226,8 @@ def submit(slug):
     dur = max(0, min(dur, 7 * 86400)) if dur is not None else None
     email = (session.get('fv') or {}).get(f.slug)
     filler = (session.get('ff') or {}).get(f.slug)
+    if not filler and (session.get('fvn') or {}).get(f.slug):
+        filler = {'name': session['fvn'][f.slug]}        # الاسم من حساب Microsoft
     parent = None
     if payload.get('parent') and f.parent_id:
         parent = Response.query.filter_by(token=str(payload['parent'])[:40], form_id=f.parent_id).first()
@@ -315,14 +317,15 @@ def done(slug):
 
 
 @public_bp.route('/f/<slug>/qr.svg')
-def qr(slug):
-    import io
-    import segno
+def qr_svg(slug):
+    import qr
     f = _form_or_404(slug)
+    lang = _flang(f)
     base = current_app.config.get('BASE_URL') or request.host_url.rstrip('/')
-    buf = io.BytesIO()
-    segno.make(f'{base}/f/{f.slug}', error='m').save(buf, kind='svg', scale=8, border=2, dark='#0f2a52')
-    return FlaskResponse(buf.getvalue(), mimetype='image/svg+xml')
+    body = qr.svg(f'{base}/f/{f.slug}', f.title_for(lang), qr.org_name(lang), qr.logo_data_uri(), caption=request.args.get('plain') != '1')
+    resp = FlaskResponse(body, mimetype='image/svg+xml')
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 
 # ── التحقق من البريد وبيانات المستجيب ────────────────────────────────────────
@@ -339,6 +342,8 @@ def login(slug):
     lang = _flang(f)
     L = T(lang)
     step, email, dev_code = 'email', '', None
+    if request.method == 'POST' and (f.s('login_method') == 'microsoft'):
+        abort(403)
     if request.method == 'POST':
         email = (request.form.get('email') or '').strip().lower()[:255]
         if request.form.get('action') == 'verify':
@@ -392,8 +397,11 @@ def login(slug):
                 else:
                     flash(L('البريد غير مُعدّ في النظام، فلا يمكن إرسال رمز الدخول. أبلغ الجهة صاحبة النموذج.',
                             'Mail is not set up on this system, so no sign-in code can be sent. Tell the form owner.'), 'error')
+    import msauth
+    method = f.s('login_method') or 'any'
     return render_template('public/login.html', f=f, lang=lang, L=L, dir='ltr' if lang == 'en' else 'rtl', step=step,
-                           email=email, dev_code=dev_code, args=_keep_args())
+                           email=email, dev_code=dev_code, args=_keep_args(), ms_ok=msauth.ready() and method != 'code',
+                           code_ok=method != 'microsoft')
 
 
 @public_bp.route('/f/<slug>/details', methods=['GET', 'POST'])
@@ -405,6 +413,9 @@ def details(slug):
         return redirect(url_for('public.login', slug=slug, **_keep_args()))
     fields = f.s('filler_fields') or []
     values, errors = dict((session.get('ff') or {}).get(f.slug) or {}), {}
+    ms_name = (session.get('fvn') or {}).get(f.slug)
+    if ms_name and 'name' in [fd['key'] for fd in fields] and not values.get('name'):
+        values['name'] = ms_name
     if request.method == 'POST':
         for fd in fields:
             v = (request.form.get('f_' + fd['key']) or '').strip()[:300]
@@ -457,3 +468,59 @@ def too_big(e):
     if request.path.endswith('/submit') or request.path.startswith('/admin/api/'):
         return jsonify({'ok': False, 'error': 'الملفات المرفقة أكبر من الحد المسموح. / The attached files are too large.'}), 413
     return 'Too large', 413
+
+
+# ── الدخول بحساب Microsoft ───────────────────────────────────────────────────
+
+def _set_verified(f, email, name=''):
+    fv = dict(session.get('fv') or {})
+    fv[f.slug] = email
+    session['fv'] = fv
+    if name:
+        mn = dict(session.get('fvn') or {})
+        mn[f.slug] = name
+        session['fvn'] = mn
+    session.permanent = True
+
+
+@public_bp.route('/f/<slug>/login/microsoft')
+def login_microsoft(slug):
+    import msauth
+    f = _form_or_404(slug)
+    L = T(_flang(f))
+    if not msauth.ready() or f.s('login_method') == 'code':
+        flash(L('الدخول بحساب Microsoft غير متاح لهذا النموذج.', 'Microsoft sign-in is not available for this form.'), 'error')
+        return redirect(url_for('public.login', slug=slug))
+    doms = [d.strip().lstrip('@') for d in re.split(r'[\s,;]+', f.s('email_domains') or '') if d.strip()]
+    url, st = msauth.start(doms[0] if len(doms) == 1 else '')
+    st.update(slug=slug, args=_keep_args())
+    session['ms_oauth'] = st
+    return redirect(url)
+
+
+@public_bp.route('/auth/ms/callback')
+def ms_callback():
+    import msauth
+    st = session.pop('ms_oauth', None) or {}
+    f = Form.query.filter_by(slug=st.get('slug') or '').first()
+    if not f:
+        abort(404)
+    L = T(_flang(f))
+    back = url_for('public.login', slug=f.slug, **(st.get('args') or {}))
+    if request.args.get('error'):
+        flash(L('أُلغي الدخول بحساب Microsoft أو رُفض.', 'Microsoft sign-in was cancelled or refused.'), 'error')
+        return redirect(back)
+    if not request.args.get('code') or not secrets.compare_digest(request.args.get('state', ''), st.get('state', '')):
+        flash(L('انتهت صلاحية طلب الدخول. أعد المحاولة.', 'The sign-in request expired. Try again.'), 'error')
+        return redirect(back)
+    try:
+        who = msauth.finish(request.args['code'], st['verifier'])
+    except Exception as e:  # noqa: BLE001 — يُسجَّل ويُعرض للمستخدم بلا تفاصيل سرية
+        current_app.logger.error('[forms] Microsoft sign-in failed: %s', e)
+        flash(L('تعذّر الدخول بحساب Microsoft. أبلغ الجهة صاحبة النموذج.', 'Microsoft sign-in failed. Tell the form owner.'), 'error')
+        return redirect(back)
+    if not _domain_ok(f, who['email']):
+        flash(L('هذا النموذج لحسابات الجهة فقط: ', 'This form accepts only these domains: ') + (f.s('email_domains') or ''), 'error')
+        return redirect(back)
+    _set_verified(f, who['email'], who['name'])
+    return redirect(url_for('public.fill', slug=f.slug, **(st.get('args') or {})))

@@ -1,0 +1,12 @@
+{% extends 'auth/_layout.html' %}
+{% from 'auth/_fields.html' import field with context %}
+{% block title %}{{ L('نسيت كلمة المرور', 'Forgot password') }}{% endblock %}
+{% block heading %}{{ L('نسيت كلمة المرور', 'Forgot password') }}{% endblock %}
+{% block body %}
+<p class="hint">{{ L('اكتب اسم المستخدم أو البريد، فيصل إلى بريد الحساب رابط لتعيين كلمة مرور جديدة صالح ساعة واحدة ولمرة واحدة.', 'Type your user name or email; a link to set a new password, valid for one hour and one use, is sent to the account email.') }}</p>
+<form method="post">
+  {{ field('username', L('اسم المستخدم أو البريد', 'User name or email'), 'fa-user', autocomplete='username', autofocus=True) }}
+  <button class="btn" type="submit"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> {{ L('أرسل الرابط', 'Send the link') }}</button>
+</form>
+<div class="links"><a href="{{ url_for('admin.login') }}">{{ L('العودة إلى الدخول', 'Back to sign in') }}</a></div>
+{% endblock %}

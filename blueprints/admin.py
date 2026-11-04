@@ -37,29 +37,97 @@ def _ip():
 
 # ── الدخول ───────────────────────────────────────────────────────────────────
 
+LOCK_N, LOCK_SEC = 10, 15 * 60
+_RESET_REQ = defaultdict(list)
+
+
+def _find_user(name):
+    name = (name or '').strip().lower()
+    if not name:
+        return None
+    return User.query.filter((db.func.lower(User.username) == name) | (db.func.lower(User.email) == name)).first()
+
+
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
         ip = _ip()
         now = time.time()
-        _LOGIN_FAILS[ip] = [t for t in _LOGIN_FAILS[ip] if now - t < 300]
-        if len(_LOGIN_FAILS[ip]) >= 8:
-            error = pick('محاولات كثيرة. انتظر خمس دقائق ثم أعد المحاولة.', 'Too many attempts. Wait five minutes and try again.')
+        _LOGIN_FAILS[ip] = [t for t in _LOGIN_FAILS[ip] if now - t < LOCK_SEC]
+        if len(_LOGIN_FAILS[ip]) >= LOCK_N:
+            error = pick('محاولات خاطئة كثيرة من هذا الجهاز. انتظر خمس عشرة دقيقة ثم أعد المحاولة.',
+                         'Too many wrong attempts from this device. Wait fifteen minutes and try again.')
         else:
-            u = User.query.filter(db.func.lower(User.username) == (request.form.get('username') or '').strip().lower()).first()
+            u = _find_user(request.form.get('username'))
             if u and u.active and u.check_password(request.form.get('password') or ''):
+                lang = session.get('lang', 'ar')
                 session.clear()
-                session['uid'] = u.id
-                session['lang'] = request.cookies.get('lang') or session.get('lang', 'ar')
-                session.permanent = True
+                session['uid'], session['sv'], session['lang'] = u.id, u.session_ver or 0, lang
+                session.permanent = bool(request.form.get('remember'))
                 u.last_login_at = datetime.utcnow()
                 db.session.commit()
+                _LOGIN_FAILS.pop(ip, None)
                 nxt = request.args.get('next') or ''
-                return redirect(nxt if nxt.startswith('/admin') else url_for('admin.dashboard'))
+                return redirect(nxt if nxt.startswith('/admin') and not nxt.startswith('//') else url_for('admin.dashboard'))
             _LOGIN_FAILS[ip].append(now)
-            error = pick('اسم المستخدم أو كلمة المرور غير صحيحة.', 'Wrong user name or password.')
+            error = pick('اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.', 'Wrong user name, email or password.')
     return render_template('admin/login.html', error=error)
+
+
+@admin_bp.route('/forgot', methods=['GET', 'POST'])
+def forgot():
+    """نسيت كلمة المرور: رابط بالبريد عبر Microsoft Graph، صالح ساعة ولمرة واحدة. الرسالة نفسها في كل الأحوال."""
+    import hashlib
+    import secrets
+    from datetime import timedelta
+    from flask import current_app
+    from mail import send_email
+    from models import PasswordReset
+    if request.method == 'POST':
+        ip = _ip()
+        now = time.time()
+        _RESET_REQ[ip] = [t for t in _RESET_REQ[ip] if now - t < 3600]
+        u = _find_user(request.form.get('username')) if len(_RESET_REQ[ip]) < 5 else None
+        _RESET_REQ[ip].append(now)
+        if u and u.active and u.email:
+            token = secrets.token_urlsafe(32)
+            db.session.add(PasswordReset(user_id=u.id, token_hash=hashlib.sha256(token.encode()).hexdigest(),
+                                         expires_at=datetime.utcnow() + timedelta(hours=1)))
+            db.session.commit()
+            link = (current_app.config.get('BASE_URL') or request.host_url.rstrip('/')) + url_for('admin.reset', token=token)
+            send_email([u.email], 'إعادة تعيين كلمة المرور — نظام النماذج والاستبيانات',
+                       f'<div dir="rtl" style="font-family:Tahoma,Arial"><p>طُلبت إعادة تعيين كلمة المرور لحسابك <b>{u.username}</b>.</p>'
+                       f'<p><a href="{link}">اضغط هنا لتعيين كلمة مرور جديدة</a> (صالح ساعة واحدة ولمرة واحدة).</p>'
+                       f'<p>إن لم تطلب ذلك فتجاهل هذه الرسالة.</p></div>', kind='reset')
+        flash(pick('إن كان الحساب موجوداً وله بريد، فقد أُرسل إليه رابط صالح ساعة واحدة.',
+                   'If the account exists and has an email, a link valid for one hour was sent to it.'), 'ok')
+        return redirect(url_for('admin.login'))
+    return render_template('admin/forgot.html')
+
+
+@admin_bp.route('/reset/<token>', methods=['GET', 'POST'])
+def reset(token):
+    import hashlib
+    from models import PasswordReset
+    row = PasswordReset.query.filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest()).first()
+    if not row or row.used or row.expires_at < datetime.utcnow():
+        flash(pick('الرابط غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً.', 'The link is invalid or expired. Request a new one.'), 'error')
+        return redirect(url_for('admin.forgot'))
+    if request.method == 'POST':
+        pw = request.form.get('new') or ''
+        if len(pw) < 8:
+            flash(pick('كلمة المرور 8 أحرف على الأقل.', 'The password needs at least 8 characters.'), 'error')
+        elif pw != request.form.get('again'):
+            flash(pick('كلمتا المرور غير متطابقتين.', 'The passwords do not match.'), 'error')
+        else:
+            u = db.session.get(User, row.user_id)
+            u.set_password(pw)
+            row.used = True
+            db.session.commit()
+            flash(pick('تغيّرت كلمة المرور. سجّل الدخول بها الآن.', 'The password was changed. Sign in with it now.'), 'ok')
+            return redirect(url_for('admin.login'))
+    return render_template('admin/reset.html', token=token)
 
 
 @admin_bp.route('/logout')
@@ -295,7 +363,7 @@ SETTING_KEYS = {
     'filler_fields', 'filler_intro', 'quiz', 'show_score', 'show_answers', 'pass_mark', 'confirmation', 'confirmation_en',
     'redirect_url', 'allow_another', 'open_at', 'close_at', 'max_responses', 'closed_message', 'notify_emails',
     'send_copy', 'autosave', 'time_limit', 'card_style', 'music_volume', 'question_numbers', 'welcome', 'welcome_en',
-    'show_subforms',
+    'show_subforms', 'login_method',
 }
 
 
@@ -348,8 +416,9 @@ def builder(fid):
     media = MediaFile.query.filter(MediaFile.form_id == f.id, MediaFile.kind.in_(['image', 'audio', 'video'])) \
         .order_by(MediaFile.id.desc()).all()
     cats = sorted({c for (c,) in db.session.query(Form.category).filter(Form.category.isnot(None)).distinct() if c})
+    import msauth
     return render_template('admin/builder.html', f=f, data=_form_json(f), others=others, media=media, cats=cats,
-                           mail_ready=graph_status()['ready'], n_responses=f.response_count,
+                           mail_ready=graph_status()['ready'], ms_ready=msauth.ready(), n_responses=f.response_count,
                            public_url=_public_url(f))
 
 
@@ -424,15 +493,23 @@ def api_media():
 @admin_bp.route('/forms/<int:fid>/qr.svg')
 @login_required
 def form_qr(fid):
+    import qr
     f = get_form(fid, edit=False)
-    import io
-    import segno
-    buf = io.BytesIO()
-    segno.make(_public_url(f), error='m').save(buf, kind='svg', scale=8, border=2, dark='#0f2a52')
-    resp = FlaskResponse(buf.getvalue(), mimetype='image/svg+xml')
+    lang = session.get('lang', 'ar')
+    plain = request.args.get('plain') == '1'
+    body = qr.svg(_public_url(f), f.title_for(lang), qr.org_name(lang), qr.logo_data_uri(), caption=not plain)
+    resp = FlaskResponse(body, mimetype='image/svg+xml')
+    resp.headers['Cache-Control'] = 'no-store'
     if request.args.get('download'):
         resp.headers['Content-Disposition'] = f'attachment; filename="form-{f.slug}-qr.svg"'
     return resp
+
+
+@admin_bp.route('/forms/<int:fid>/qr/print')
+@login_required
+def form_qr_print(fid):
+    f = get_form(fid, edit=False)
+    return render_template('admin/qr_print.html', f=f, public_url=_public_url(f))
 
 
 # ── الإجراءات الجماعية ───────────────────────────────────────────────────────
@@ -751,6 +828,7 @@ def account():
             u.set_password(request.form['new'])
             u.name = (request.form.get('name') or '').strip()[:200] or u.name
             db.session.commit()
+            session['sv'] = u.session_ver          # هذه الجلسة تبقى، والجلسات الأخرى تخرج
             flash(pick('تغيّرت كلمة المرور.', 'The password was changed.'), 'ok')
         return redirect(url_for('admin.account'))
     return render_template('admin/account.html', u=u)
@@ -791,7 +869,8 @@ def settings():
         flash(pick('حُفظت الإعدادات.', 'Settings saved.'), 'ok')
         return redirect(url_for('admin.settings'))
     logs = EmailLog.query.order_by(EmailLog.id.desc()).limit(30).all()
-    return render_template('admin/settings.html', mail=graph_status(), logs=logs,
+    import msauth
+    return render_template('admin/settings.html', mail=graph_status(), logs=logs, ms_redirect=msauth.redirect_uri(),
                            org_ar=AppSetting.get('org_name_ar') or '', org_en=AppSetting.get('org_name_en') or '',
                            acc=AppSetting.get('accent') or '#0C67EC')
 

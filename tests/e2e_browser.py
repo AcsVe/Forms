@@ -91,7 +91,8 @@ with app.app_context():
     TIDS = [f.id for f in Form.query.filter_by(is_template=True)]
 
 # ── الخادم الحقيقي (Waitress) ────────────────────────────────────────────────
-env = dict(os.environ, PORT=str(PORT), FORMS_MAIL_DEV='1', HOST='127.0.0.1')
+# قيم Microsoft وهمية: تُظهر زر الدخول بالحساب، وطلب صفحة Microsoft يُعترض في المتصفح ولا يخرج
+env = dict(os.environ, PORT=str(PORT), FORMS_MAIL_DEV='1', HOST='127.0.0.1', MS_TENANT_ID='e2e-tenant', MS_CLIENT_ID='e2e-client', MS_CLIENT_SECRET='e2e')
 srv = subprocess.Popen([sys.executable, os.path.join(ROOT, 'serve.py')], env=env, cwd=ROOT,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 for _ in range(60):
@@ -201,6 +202,32 @@ try:
         page.wait_for_url('**/edit', timeout=8000)
         if page.locator('.qcard').count() != 4:
             note('import: created form does not have 4 questions')
+
+        print('tables: search and export')
+        check(page, errs, f'/admin/forms/{RICH_ID}/responses')
+        page.fill('.dt-tools input[type=search]', 'طالب 1')
+        if page.locator('table[data-table] tbody tr:not([hidden])').count() != 1:
+            note('table search: expected one row')
+        with page.expect_download() as dl:
+            page.click('.dt-export')
+        data = open(dl.value.path(), encoding='utf-8-sig').read()
+        if 'طالب 1' not in data or 'طالب 2' in data:
+            note('table export: wrong rows')
+
+        print('QR code: image, PNG download, print page')
+        check(page, errs, f'/admin/forms/{RICH_ID}/edit#share')
+        page.wait_for_function("document.getElementById('qrImg').naturalWidth > 0")
+        with page.expect_download() as dl:
+            page.click('#qrPng')
+        png = open(dl.value.path(), 'rb').read()
+        if not png[1:4] == b'PNG' or len(png) < 5000:
+            note(f'QR PNG download: {len(png)} bytes')
+        else:
+            with open(os.path.join(OUT, 'qr.png'), 'wb') as fh:
+                fh.write(png)
+        check(page, errs, f'/admin/forms/{RICH_ID}/qr/print', shot='qr-print.jpg')
+        if not page.evaluate("document.querySelector('img.qr').naturalWidth > 0"):
+            note('QR print page: image did not load')
         ctx.close()
 
         # ── الهاتف ──
@@ -313,6 +340,14 @@ try:
 
         print('email sign-in gate with respondent details')
         check(fp, ferrs, f'/f/{GATE_SLUG}', shot='g1-login.jpg')
+        if not fp.is_visible('#msBtn'):
+            note('gate: Microsoft sign-in button missing')
+        fp.route('https://login.microsoftonline.com/**', lambda route: route.fulfill(status=200, body='microsoft'))
+        fp.click('#msBtn')
+        fp.wait_for_url('https://login.microsoftonline.com/e2e-tenant/oauth2/v2.0/authorize*')
+        if 'auth%2Fms%2Fcallback' not in fp.url:
+            note('gate: Microsoft redirect URI missing')
+        fp.goto(BASE + f'/f/{GATE_SLUG}/login', wait_until='networkidle')
         fp.fill('#email', 'student@school.jo')
         fp.click('.gate-form button[type=submit]')
         code = fp.inner_text('#devCode')

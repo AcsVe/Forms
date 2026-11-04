@@ -20,6 +20,9 @@
     <span class="badge {{ 'ok' if mail.sender else 'bad' }}">{{ L('المرسل', 'Sender') }}: {{ mail.sender or '—' }}</span>
     <p class="note">{{ L('القيم في ملف .env على الخادم، ويضعها 1_setup.bat (ويأخذها من نظام آخر على الجهاز إن وُجدت). البريد لازم لرموز الدخول إلى النماذج المحمية وللإشعارات.', 'The values live in .env on the server; 1_setup.bat writes them (taking them from another system on the PC if present). Mail is needed for sign-in codes and notifications.') }}</p>
   </div>
+  <h3 class="sub-h">{{ L('الدخول بحساب Microsoft للمدرسة في النماذج', 'School Microsoft account sign-in for forms') }}</h3>
+  <p class="note">{{ L('يستخدم تسجيل التطبيق نفسه. يلزم مرة واحدة في بوابة Azure ← تسجيل التطبيق: أضف عنوان إعادة التوجيه الآتي من نوع Web، وأضف صلاحيات Microsoft Graph المفوّضة openid وprofile وemail وUser.Read ثم امنح موافقة المسؤول.', 'It uses the same app registration. Once in the Azure portal → app registration: add this Web redirect URI, and the delegated Microsoft Graph permissions openid, profile, email and User.Read, then grant admin consent.') }}</p>
+  <div class="copy-row"><input type="text" readonly dir="ltr" value="{{ ms_redirect }}"><button type="button" data-copy="{{ ms_redirect }}">{{ L('نسخ', 'Copy') }}</button></div>
   <form method="post" class="row" style="margin-top:10px"><input type="hidden" name="action" value="test_mail">
     <div><label for="to">{{ L('أرسل رسالة تجربة إلى', 'Send a test message to') }}</label><input type="email" id="to" name="to" required dir="ltr" value="{{ me.email or '' }}"></div>
     <div class="shrink"><button type="submit">{{ L('إرسال', 'Send') }}</button></div></form>

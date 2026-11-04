@@ -539,6 +539,21 @@
   }
   document.addEventListener('tab-shown', (e) => { if (e.detail === 'share') renderPrefill(); });
 
+  // تحميل رمز QR صورة PNG: يُرسم ملف SVG من الخادم على لوحة رسم في المتصفح نفسه
+  const qrBtn = document.getElementById('qrPng');
+  if (qrBtn) qrBtn.addEventListener('click', async () => {
+    const txt = await (await fetch(qrBtn.dataset.svg, { cache: 'no-store' })).text();
+    const img = new Image();
+    img.onload = () => {
+      const k = 1200 / img.width, cv = document.createElement('canvas');
+      cv.width = 1200; cv.height = Math.round(img.height * k);
+      const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      cv.toBlob((b) => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = qrBtn.dataset.name; document.body.append(a); a.click(); a.remove(); }, 'image/png');
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(txt);
+  });
+
   renderList();
   setState('ok', T('محفوظ ✓', 'Saved ✓'));
 })();

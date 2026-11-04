@@ -1,6 +1,6 @@
-/* <table data-table>: sticky header, a filter box (or list) under each column with data-filter="text|select",
-   click a header to sort (data-sort="num" for numbers; data-nosort to opt out), <td data-value> for the value
-   used by sorting/filtering. Rows hidden by a filter are skipped by «select all» (bulk selection). */
+/* <table data-table>: رأس ثابت، وبحث عام فوق الجدول، وتصفية تحت كل عمود data-filter="text|select"، وترتيب بالضغط
+   على العنوان (data-sort="num" للأرقام، data-nosort لإيقافه)، و<td data-value> قيمة الترتيب والتصفية، وتصدير الصفوف
+   الظاهرة إلى ملف يفتحه Excel. الصفوف المخفية بالتصفية لا يشملها «تحديد الكل». */
 (function () {
   'use strict';
   const AR = document.documentElement.lang !== 'en';
@@ -11,6 +11,28 @@
     if (!head || !body) return;
     const cols = [...head.cells], filters = [];
     table.classList.add('dt');
+    // شريط الأدوات: بحث في كل الأعمدة + تصدير
+    let q = null;
+    if (body.rows.length > 1 && !table.hasAttribute('data-notools')) {
+      const tools = document.createElement('div');
+      tools.className = 'dt-tools';
+      q = document.createElement('input');
+      q.type = 'search';
+      q.placeholder = AR ? 'بحث في الجدول…' : 'Search the table…';
+      q.setAttribute('aria-label', AR ? 'بحث في الجدول' : 'Search the table');
+      q.addEventListener('input', apply);
+      const count = document.createElement('span');
+      count.className = 'dt-count';
+      const ex = document.createElement('button');
+      ex.type = 'button';
+      ex.className = 'sm ghost dt-export';
+      ex.innerHTML = '<i class="fa-solid fa-file-excel" aria-hidden="true"></i> ' + (AR ? 'تصدير إلى Excel' : 'Export to Excel');
+      ex.addEventListener('click', exportRows);
+      tools.append(q, count, ex);
+      const anchor = table.closest('.dt-wrap') || table;
+      anchor.parentNode.insertBefore(tools, anchor);
+      table.dtCount = count;
+    }
     if (cols.some((th) => th.dataset.filter)) {
       const fr = table.tHead.insertRow(-1);
       fr.className = 'dt-filter';
@@ -40,10 +62,12 @@
       if (th.hasAttribute('data-nosort') || th.querySelector('input')) return;
       th.classList.add('dt-sort');
       th.tabIndex = 0;
+      th.setAttribute('aria-sort', 'none');
       const go = () => {
         dir = sc === i ? -dir : 1; sc = i;
-        cols.forEach((c) => c.classList.remove('asc', 'desc'));
+        cols.forEach((c) => { c.classList.remove('asc', 'desc'); if (c.hasAttribute('aria-sort')) c.setAttribute('aria-sort', 'none'); });
         th.classList.add(dir > 0 ? 'asc' : 'desc');
+        th.setAttribute('aria-sort', dir > 0 ? 'ascending' : 'descending');
         const num = th.dataset.sort === 'num';
         [...body.rows].sort((a, b) => {
           const x = val(a.cells[i]), y = val(b.cells[i]);
@@ -54,11 +78,30 @@
       th.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
     });
     function apply() {
+      const all = q && q.value ? norm(q.value) : '';
+      let shown = 0;
       [...body.rows].forEach((tr) => {
-        tr.hidden = !filters.every((el, i) => !el || !el.value ||
-          (el.tagName === 'SELECT' ? val(tr.cells[i]) === el.value : norm(val(tr.cells[i])).includes(norm(el.value))));
+        const ok = filters.every((el, i) => !el || !el.value ||
+          (el.tagName === 'SELECT' ? val(tr.cells[i]) === el.value : norm(val(tr.cells[i])).includes(norm(el.value))))
+          && (!all || norm(tr.textContent).includes(all));
+        tr.hidden = !ok;
+        if (ok) shown++;
       });
+      if (table.dtCount) table.dtCount.textContent = (all || filters.some((f) => f && f.value)) ? (AR ? `الظاهر: ${shown} من ${body.rows.length}` : `Showing ${shown} of ${body.rows.length}`) : '';
       document.querySelectorAll('.bulk-bar').forEach((b) => window.bulkRefresh && window.bulkRefresh(b.dataset.bulk));
+    }
+    function exportRows() {
+      const keep = cols.map((th) => !(th.classList.contains('chk') || th.classList.contains('act')));
+      const cell = (s) => '"' + String(s).replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"';
+      const lines = [cols.filter((_, i) => keep[i]).map((th) => cell(th.textContent)).join(',')];
+      [...body.rows].filter((r) => !r.hidden).forEach((r) => {
+        lines.push([...r.cells].filter((_, i) => keep[i]).map((td) => cell(td.textContent)).join(','));
+      });
+      const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.title.split('·')[0].trim() || 'table').replace(/[\\/:*?"<>|]+/g, '-') + '.csv';
+      document.body.append(a); a.click(); a.remove();
     }
     table.dtApply = apply;
   }

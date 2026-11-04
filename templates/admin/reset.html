@@ -1,0 +1,11 @@
+{% extends 'auth/_layout.html' %}
+{% from 'auth/_fields.html' import field with context %}
+{% block title %}{{ L('كلمة مرور جديدة', 'New password') }}{% endblock %}
+{% block heading %}{{ L('كلمة مرور جديدة', 'New password') }}{% endblock %}
+{% block body %}
+<form method="post">
+  {{ field('new', L('كلمة المرور الجديدة (8 أحرف على الأقل)', 'New password (at least 8 characters)'), 'fa-lock', type='password', autocomplete='new-password', autofocus=True) }}
+  {{ field('again', L('أعد كتابتها', 'Type it again'), 'fa-lock', type='password', autocomplete='new-password') }}
+  <button class="btn" type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ L('حفظ', 'Save') }}</button>
+</form>
+{% endblock %}

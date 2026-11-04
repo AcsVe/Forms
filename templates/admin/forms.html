@@ -54,6 +54,7 @@
     <a class="icon-btn" href="{{ url_for('admin.builder', fid=f.id) }}" title="{{ L('تصميم', 'Design') }}" aria-label="{{ L('تصميم', 'Design') }}"><i class="fa-solid fa-pen-ruler"></i></a>
     <a class="icon-btn" href="{{ url_for('admin.analysis', fid=f.id) }}" title="{{ L('التحليل', 'Analysis') }}" aria-label="{{ L('التحليل', 'Analysis') }}"><i class="fa-solid fa-chart-pie"></i></a>
     <a class="icon-btn" href="{{ url_for('public.fill', slug=f.slug, preview=1) }}" target="_blank" rel="noopener" title="{{ L('معاينة', 'Preview') }}" aria-label="{{ L('معاينة', 'Preview') }}"><i class="fa-solid fa-eye"></i></a>
+    <a class="icon-btn" href="{{ url_for('admin.builder', fid=f.id) }}#share" title="{{ L('رمز QR والمشاركة', 'QR code and sharing') }}" aria-label="{{ L('رمز QR والمشاركة', 'QR code and sharing') }}"><i class="fa-solid fa-qrcode"></i></a>
   </div></td>
 </tr>
 {% endfor %}

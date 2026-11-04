@@ -165,6 +165,10 @@ def create_app(test_config=None):
             resp.headers['Content-Security-Policy'] = "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'"
         return resp
 
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_file(os.path.join(app.static_folder, 'icons', 'icon-192.png'), mimetype='image/png', max_age=86400)
+
     @app.route('/healthz')
     def healthz():
         return FlaskResponse('ok', mimetype='text/plain')

@@ -219,3 +219,8 @@ html[dir=ltr] .fwd-back{transform:scaleX(-1)}
   .mine[hidden]{display:block!important}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.ms-btn{width:100%;margin-top:14px;background:#fff;color:#1f2937;border:1.5px solid #cbd5e1;box-shadow:none}
+.ms-btn:hover{border-color:#2f2f2f;filter:none}
+.or-sep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.86rem;margin:16px 0 0}
+.or-sep::before,.or-sep::after{content:'';flex:1;border-top:1px solid var(--line)}

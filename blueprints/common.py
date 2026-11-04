@@ -18,7 +18,9 @@ def current_user():
     if not uid:
         return None
     u = db.session.get(User, uid)
-    return u if u and u.active else None
+    if not u or not u.active or session.get('sv', 0) != (u.session_ver or 0):
+        return None                    # حساب معطّل أو تغيّرت كلمة مروره بعد هذه الجلسة
+    return u
 
 
 def login_required(view):

@@ -206,3 +206,9 @@ body.bi input.bi-only{display:inline-block!important}
 @media (max-width:991px){.users-grid{grid-template-columns:1fr}}
 @media print{.noprint,.filter-bar,.form-nav,.tabbar{display:none!important}.grid2{display:block}.card{margin-bottom:10px}}
 @media (max-width:640px){.b-actions>a.btn.ghost[target]{display:none}}
+/* أدوات الجداول: بحث عام وتصدير */
+.dt-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
+.dt-tools input[type=search]{flex:1;min-width:180px;max-width:360px;min-height:38px}
+.dt-count{color:var(--muted);font-size:.84rem}
+.dt-tools button{margin-inline-start:auto}
+.auth-card .check.remember{margin:2px 0 10px}

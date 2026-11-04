@@ -11,13 +11,18 @@
 | المستودع | `AcsVe/Forms` (لم يُنشأ على GitHub بعد) |
 | التقنية | Flask + Waitress (`serve.py`)، واجهة SAS (`templates/admin/base.html`، `static/css/admin.css` + `forms-admin.css`) |
 | القاعدة | SQLite `dataorms.db` (والملفات المرفوعة داخلها في `media_files`) |
-| الاختبار | `python -m pytest -q tests/` ثم المتصفح: `python tests/e2e_browser.py` (يستخدم Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً) |
+| الاختبار | `python -m pytest -q tests/` (26 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` (يستخدم Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً) |
 | الدليل | `docs/Forms.md` |
 
 - **ترحيل القاعدة:** `models.py: MIGRATIONS` — كل عمود جديد يُضاف إلى القائمة (جدول، عمود، تعريف SQL) فيُضاف عند الإقلاع دون مسح بيانات. أول مدير يُنشأ من `ADMIN_USER`/`ADMIN_PASS` في `.env` عند أول تشغيل، والقوالب الجاهزة مرة واحدة (`seed_templates.py`).
 - **بنية النموذج** كاملة في `forms.schema` (JSON): لكل سؤال معرّف نصي ثابت تُربط به الإجابات (`responses.answers`). المنطق (شروط الإظهار والتفرّع والتحقق والتصحيح) في `schema.py`، ونسخته في المتصفح `static/js/fill.js: walk()` — **أي تعديل في أحدهما يُطبَّق في الآخر**، والخادم يعيد التحقق دائماً ولا يحفظ إجابات الأسئلة المخفية.
 - الإجابات الصحيحة للاختبار لا تُرسل إلى المتصفح (`strip_quiz` في `blueprints/public.py`)، وفي الاختبارات فحص لذلك.
 - البريد عبر Microsoft Graph (`mail.py`، قيم `MS_*` في `.env`) — لازم لرموز الدخول إلى النماذج المحمية والإشعارات. `FORMS_MAIL_DEV=1` (للتجربة المحلية فقط) يُظهر الرمز على الشاشة إن لم يكن البريد مُعدّاً.
+- **الدخول بحساب Microsoft** للنماذج المحمية: `msauth.py` (التفويض مع PKCE، والبريد من Graph `/me` لا من الرمز)، والمسارات `/f/<slug>/login/microsoft` و`/auth/ms/callback`؛ يلزم عنوان إعادة التوجيه وصلاحيات User.Read في تسجيل التطبيق (التفاصيل في الدليل). لا تُطبع قيم `MS_*` في أي رسالة.
+- **دخول الإدارة بنمط القاعات:** اسم المستخدم أو البريد، و«تذكرني»، و«نسيت كلمة المرور» (`password_resets`، صالح ساعة ولمرة واحدة)، و`users.session_ver` يُخرج الجلسات القديمة عند تغيير كلمة المرور، وعشر محاولات خاطئة توقف الدخول 15 دقيقة.
+- **رمز QR** في `qr.py` (segno على الخادم، تصحيح H، شعار الجهة واسمها وعنوان النموذج)، وPNG يُرسم في المتصفح من ملف SVG نفسه؛ لا خدمة خارجية.
+- **كل جدول** `<table data-table>` يأخذ من `static/js/table.js`: رأساً ثابتاً، وبحثاً عاماً، وتصفية لكل عمود، وترتيباً، وتصديراً إلى Excel؛ ومع `_bulk.html` التحديد المتعدد والإجراءات الجماعية. أي قائمة جديدة تستخدمهما.
+- مصادر القواعد التي اتُّبعت: `CLAUDE.md` في Bell وvenues وManualBuilder، و`docs/Bell.md`، و`SYSTEM_GUIDE_AR.md` في القاعات، و`docs/Requirements.md` في ManualBuilder.
 - الرسوم: Chart.js محفوظة محلياً في `static/vendor/` (لا تعتمد على الإنترنت)، والألوان من لوحة مُتحقَّق منها لعمى الألوان في `static/js/charts.js`.
 - النفق الاحتياطي `forms-standby`، ومجلد النسخ في Drive `IAJ-backups/forms`، والمهام `FORMS Website` / `FORMS Hourly Backup` / `FORMS Failover Watchdog`.
 

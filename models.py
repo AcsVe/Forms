@@ -49,11 +49,13 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     last_login_at = db.Column(db.DateTime)
+    session_ver   = db.Column(db.Integer, nullable=False, default=0)   # يزيد مع تغيير كلمة المرور فتخرج الجلسات القديمة
 
     forms = db.relationship('Form', backref='owner', lazy='dynamic', foreign_keys='Form.owner_id')
 
     def set_password(self, pw):
         self.password_hash = generate_password_hash(pw)
+        self.session_ver = (self.session_ver or 0) + 1
 
     def check_password(self, pw):
         return bool(pw) and check_password_hash(self.password_hash, pw)
@@ -202,6 +204,17 @@ class EmailCode(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class PasswordReset(db.Model):
+    """رابط «نسيت كلمة المرور»: صالح ساعة ولمرة واحدة؛ يُحفظ ملخّص الرمز لا الرمز نفسه."""
+    __tablename__ = 'password_resets'
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used       = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class AppSetting(db.Model):
     __tablename__ = 'app_settings'
     key   = db.Column(db.String(100), primary_key=True)
@@ -238,6 +251,7 @@ MIGRATIONS = [
     ('forms', 'starts', 'INTEGER NOT NULL DEFAULT 0'),
     ('responses', 'manual_points', 'TEXT'),
     ('responses', 'starred', 'BOOLEAN NOT NULL DEFAULT 0'),
+    ('users', 'session_ver', 'INTEGER NOT NULL DEFAULT 0'),
 ]
 
 

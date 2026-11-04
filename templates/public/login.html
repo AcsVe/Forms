@@ -7,7 +7,14 @@
   <p class="muted"><i class="fa-solid fa-envelope-circle-check"></i> {{ L('هذا النموذج يتطلب التحقق من بريدك الإلكتروني أولاً.', 'This form needs you to confirm your email first.') }}</p>
   {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="f-alert {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
   {% if dev_code %}<div class="f-alert ok">{{ L('وضع التجربة (البريد غير مُعدّ): رمز الدخول هو', 'Test mode (mail not set up): the code is') }} <b dir="ltr" id="devCode">{{ dev_code }}</b></div>{% endif %}
-  {% if step == 'code' %}
+  {% if ms_ok and step != 'code' %}
+  <a class="f-btn ms-btn" id="msBtn" href="{{ url_for('public.login_microsoft', slug=f.slug, **args) }}">
+    <svg width="20" height="20" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+    {{ L('الدخول بحساب Microsoft للمدرسة', 'Sign in with your school Microsoft account') }}</a>
+  {% if code_ok %}<div class="or-sep"><span>{{ L('أو برمز يصل إلى بريدك', 'or with a code sent to your email') }}</span></div>{% endif %}
+  {% endif %}
+  {% if not code_ok %}{% if not ms_ok %}<div class="f-alert error">{{ L('الدخول بحساب Microsoft غير مُعدّ في النظام. أبلغ الجهة صاحبة النموذج.', 'Microsoft sign-in is not set up on this system. Tell the form owner.') }}</div>{% endif %}
+  {% elif step == 'code' %}
   <form method="post" action="{{ request.full_path }}" class="gate-form">
     <input type="hidden" name="action" value="verify"><input type="hidden" name="email" value="{{ email }}">
     <label for="code">{{ L('رمز التحقق المرسل إلى', 'Code sent to') }} <span dir="ltr">{{ email }}</span></label>
