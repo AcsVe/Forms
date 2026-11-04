@@ -6,15 +6,15 @@
   <form class="card" method="post" enctype="multipart/form-data" id="imp">
     <label for="title">{{ L('العنوان (اختياري — يؤخذ من النص إن وُجد)', 'Title (optional — taken from the text if present)') }}</label>
     <input type="text" id="title" name="title" maxlength="300">
-    <label for="text" style="margin-top:10px">{{ L('النص أو JSON أو سكربت Google Apps Script', 'Text, JSON or Google Apps Script') }}</label>
+    <label for="text" style="margin-top:10px">{{ L('قائمة الأسئلة، أو ملف نموذج محفوظ، أو سكربت نماذج Google', 'The question list, a saved form file, or a Google Forms script') }}</label>
     <textarea id="text" name="text" rows="18" class="code-area" placeholder="# {{ L('عنوان النموذج', 'Form title') }}&#10;1. {{ L('ما اسمك؟', 'What is your name?') }} *&#10;2. {{ L('ما صفك؟', 'Which grade?') }} [{{ L('قائمة', 'dropdown') }}]&#10;- {{ L('السابع', 'Seventh') }}&#10;- {{ L('الثامن', 'Eighth') }}">{{ text }}</textarea>
     <div class="row" style="margin-top:10px">
-      <div><label for="file">{{ L('أو اختر ملفاً (txt أو json أو js)', 'Or choose a file (txt, json or js)') }}</label><input type="file" id="file" name="file" accept=".txt,.json,.js,.gs,.md"></div>
+      <div><label for="file">{{ L('أو اختر ملفاً', 'Or choose a file') }}</label><input type="file" id="file" name="file" accept=".txt,.json,.js,.gs,.md"></div>
     </div>
     <div class="row-actions" style="margin-top:14px">
       <button type="submit"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ L('إنشاء النموذج', 'Create the form') }}</button>
       <button type="button" class="ghost" data-example="text">{{ L('مثال نصي', 'Text example') }}</button>
-      <button type="button" class="ghost" data-example="json">{{ L('مثال JSON', 'JSON example') }}</button>
+      <button type="button" class="ghost" data-example="json">{{ L('مثال ملف محفوظ', 'Saved-file example') }}</button>
       <button type="button" class="ghost" data-example="script">{{ L('مثال سكربت', 'Script example') }}</button>
     </div>
   </form>
@@ -32,10 +32,10 @@
 <tr><td class="mono">- {{ L('خيار', 'option') }}</td><td>{{ L('خيارات «اختيار من متعدد»؛ و[ ] لمربعات الاختيار', 'Multiple-choice options; [ ] for checkboxes') }}</td></tr>
 <tr><td class="mono">- {{ L('خيار', 'option') }} ✓</td><td>{{ L('الإجابة الصحيحة في الاختبار', 'The correct answer in a quiz') }}</td></tr>
 <tr><td class="mono">| {{ L('ممتاز', 'Excellent') }} | {{ L('جيد', 'Good') }} |</td><td>{{ L('أعمدة الشبكة، وخياراتها صفوف', 'Grid columns; the options become rows') }}</td></tr>
-<tr><td class="mono">[فقرة] [تاريخ] [وقت] [رقم] [بريد] [هاتف] [قائمة] [متعدد] [نعم لا] [تقييم] [1-10] [NPS] [شريط] [ليكرت] [شبكة] [ترتيب] [توزيع] [ملف] [توقيع]</td><td>{{ L('نوع السؤال (وتُقبل الأسماء الإنجليزية مثل [paragraph] [date] [rating])', 'Question type (English names such as [paragraph] [date] [rating] work too)') }}</td></tr>
+<tr><td class="mono">[فقرة] [تاريخ] [وقت] [رقم] [بريد] [هاتف] [قائمة] [متعدد] [نعم لا] [تقييم] [1-10] [NPS] [شريط] [ليكرت] [شبكة] [ترتيب] [توزيع] [ملف] [توقيع]</td><td>{{ L('نوع السؤال (وتُقبل أسماؤه بالإنجليزية أيضاً)', 'Question type (English names such as [paragraph] [date] [rating] work too)') }}</td></tr>
 <tr><td class="mono">[2 {{ L('درجات', 'points') }}]</td><td>{{ L('درجة السؤال في الاختبار', 'Points for the question in a quiz') }}</td></tr>
 </tbody></table></div>
-<p class="note">{{ L('يُقبل أيضاً: ملف JSON صدّرته من هذا النظام («تصدير بنية النموذج»)، أو مصفوفة أسئلة، أو سكربت Google Apps Script يستخدم addMultipleChoiceItem وaddCheckboxItem وaddListItem وaddTextItem وaddScaleItem وaddGridItem وغيرها.', 'Also accepted: a JSON file exported from this system ("Export form structure"), an array of questions, or a Google Apps Script using addMultipleChoiceItem, addCheckboxItem, addListItem, addTextItem, addScaleItem, addGridItem and others.') }}</p>
+<p class="note">{{ L('يُقبل أيضاً: ملف نموذج حفظته من هذا النظام («حفظ النموذج ملفاً لإعادة استخدامه»)، أو سكربت نماذج Google الذي يُنشئ الأسئلة.', 'Also accepted: a form file saved from this system ("Save the form as a file to reuse"), or a Google Forms script that creates the questions.') }}</p>
 </details>
 {% endblock %}
 {% block scripts %}

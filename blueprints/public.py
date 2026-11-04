@@ -14,7 +14,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import uaparse
 from blueprints.common import can_edit, current_user
-from models import EmailCode, Form, MediaFile, Response, db
+from models import EmailCode, Form, Invitation, MediaFile, Person, Response, db
 from schema import NO_ANSWER, answer_text, grade, qtitle, validate
 
 public_bp = Blueprint('public', __name__)
@@ -71,6 +71,33 @@ def _gates(f):
     return None
 
 
+def _invitation(f):
+    """دعوة هذا المتصفح لهذا النموذج (من ?inv= أو من الجلسة)."""
+    tok = request.args.get('inv') or (session.get('inv') or {}).get(f.slug)
+    if not tok:
+        return None
+    inv = Invitation.query.filter_by(token=str(tok)[:40], form_id=f.id).first()
+    if inv and request.args.get('inv'):
+        d = dict(session.get('inv') or {})
+        d[f.slug] = inv.token
+        session['inv'] = d
+    return inv
+
+
+def _audience_block(f, inv, lang):
+    """رسالة المنع إن كان النموذج للمدعوين فقط والمستجيب ليس منهم (أو None)."""
+    L = T(lang)
+    email = (session.get('fv') or {}).get(f.slug)
+    if not inv and email:
+        inv = Invitation.query.join(Person).filter(Invitation.form_id == f.id, db.func.lower(Person.email) == email).first()
+    if f.s('audience_only') and not inv:
+        return L('هذا النموذج للمدعوين فقط. افتحه من الرابط الذي وصلك في الدعوة.',
+                 'This form is for invited people only. Open it from the link in your invitation.')
+    if inv and inv.responded_at and not f.s('allow_another'):
+        return L('شكراً لك، سبق أن أرسلت إجابتك على هذا النموذج.', 'Thank you, you have already answered this form.')
+    return None
+
+
 def _keep_args():
     return dict(request.args.items())
 
@@ -86,9 +113,20 @@ def fill(slug):
     if not ok and not preview:
         return render_template('public/closed.html', f=f, lang=lang, L=T(lang), dir='ltr' if lang == 'en' else 'rtl',
                                msg=f.s('closed_message') or (why_en if lang == 'en' else why_ar)), 200
-    gate = _gates(f)
-    if gate:
-        return redirect(gate)
+    inv = _invitation(f)
+    if inv and not inv.opened_at and not preview:
+        inv.opened_at = datetime.utcnow()
+        db.session.commit()
+    if not (inv and f.s('audience_only')) or f.s('require_email'):
+        gate = _gates(f)
+        if gate:
+            return redirect(gate)
+    elif f.s('filler_fields') and f.slug not in (session.get('ff') or {}):
+        return redirect(url_for('public.details', slug=f.slug, **_keep_args()))
+    if not preview:
+        block = _audience_block(f, inv, lang)
+        if block:
+            return render_template('public/closed.html', f=f, lang=lang, L=T(lang), dir='ltr' if lang == 'en' else 'rtl', msg=block)
     email = (session.get('fv') or {}).get(f.slug)
     if not preview and f.s('one_per_email') and email and \
             Response.query.filter_by(form_id=f.id, email=email, is_test=False).first():
@@ -157,8 +195,13 @@ def submit(slug):
     ok, why_ar, why_en = f.is_accepting()
     if not ok and not preview:
         return jsonify({'ok': False, 'error': f.s('closed_message') or L(why_ar, why_en)}), 409
-    if _gates(f):
+    inv = _invitation(f)
+    if (not (inv and f.s('audience_only')) or f.s('require_email')) and _gates(f):
         return jsonify({'ok': False, 'error': L('أكمل خطوة الدخول أولاً.', 'Complete the sign-in step first.'), 'redirect': _gates(f)}), 403
+    if not preview:
+        block = _audience_block(f, inv, lang)
+        if block:
+            return jsonify({'ok': False, 'error': block}), 403
     if _limited('sub:' + _ip(), 30, 60):
         return jsonify({'ok': False, 'error': L('إرسال متكرر كثير. انتظر دقيقة.', 'Too many submissions. Wait a minute.')}), 429
     try:
@@ -256,6 +299,9 @@ def submit(slug):
     r.answers = answers
     if f.s('quiz'):
         r.score, r.max_score, _ = grade(f.questions, answers)
+    if not preview:
+        import people
+        people.mark_response(f, r, inv.token if inv else None, email)
     db.session.commit()
     _after_submit_mail(f, r, lang)
     resp = jsonify({'ok': True, 'redirect': url_for('public.done', slug=f.slug, t=r.token, **({'preview': '1'} if preview else {}))})
@@ -409,6 +455,7 @@ def details(slug):
     f = _form_or_404(slug)
     lang = _flang(f)
     L = T(lang)
+    inv = _invitation(f)
     if f.s('require_email') and not (session.get('fv') or {}).get(f.slug):
         return redirect(url_for('public.login', slug=slug, **_keep_args()))
     fields = f.s('filler_fields') or []
@@ -416,6 +463,8 @@ def details(slug):
     ms_name = (session.get('fvn') or {}).get(f.slug)
     if ms_name and 'name' in [fd['key'] for fd in fields] and not values.get('name'):
         values['name'] = ms_name
+    if inv and 'name' in [fd['key'] for fd in fields] and not values.get('name'):
+        values['name'] = inv.person.name
     if request.method == 'POST':
         for fd in fields:
             v = (request.form.get('f_' + fd['key']) or '').strip()[:300]

@@ -336,6 +336,8 @@ def _delete_block(f):
         return ('له إجابات — احذف الإجابات أولاً أو أرشفه بدلاً من حذفه', 'it has responses — delete them first, or archive it instead')
     if f.children.count():
         return ('له نماذج فرعية', 'it has sub-forms')
+    if f.invitations.count():
+        return ('له مدعوون — احذف الدعوات أولاً أو أرشفه', 'it has invited people — delete the invitations first, or archive it')
     return None
 
 
@@ -595,6 +597,9 @@ def bulk(entity):
             else:
                 continue
             done += 1
+    elif entity in ('people', 'groups', 'invitations'):
+        import people as people_mod
+        done, skipped = people_mod.bulk(entity, ids, action, request.form)
     else:
         abort(404)
     db.session.commit()
@@ -846,7 +851,8 @@ def settings():
             res = send_email([to], pick('رسالة تجربة من نظام النماذج', 'Test message from the forms system'),
                              '<p dir="rtl">' + pick('هذه رسالة تجربة. البريد يعمل.', 'This is a test message. Mail works.') + '</p>', kind='test')
             flash(pick('أُرسلت رسالة التجربة.', 'The test message was sent.') if res.ok else
-                  pick('تعذّر الإرسال: ', 'Sending failed: ') + (res.error or ''), 'ok' if res.ok else 'error')
+                  pick('تعذّر الإرسال. افتح «حساب Microsoft» واضغط «فحص الاتصال»، وتأكد من بريد المرسل.',
+                       'Sending failed. Open "Microsoft account", press "Test connection", and check the sender mailbox.'), 'ok' if res.ok else 'error')
             return redirect(url_for('admin.settings'))
         AppSetting.set('org_name_ar', (request.form.get('org_name_ar') or '').strip()[:200])
         AppSetting.set('org_name_en', (request.form.get('org_name_en') or '').strip()[:200])
@@ -875,7 +881,49 @@ def settings():
                            acc=AppSetting.get('accent') or '#0C67EC')
 
 
+@admin_bp.route('/settings/microsoft', methods=['GET', 'POST'])
+@admin_required
+def settings_microsoft():
+    """ربط حساب Microsoft للمدرسة: المعرّفات والسر (يُحفظ في ملف الإعدادات على الخادم ولا يُعرض)، وفحص الاتصال."""
+    import msauth
+    import tenant
+    checks = None
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'save':
+            vals = {}
+            guid = re.compile(r'^[0-9a-fA-F-]{36}$|^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+            tid = (request.form.get('tenant') or '').strip()
+            cid = (request.form.get('client') or '').strip()
+            sender = (request.form.get('sender') or '').strip()
+            secret = (request.form.get('secret') or '').strip()
+            if tid and not guid.match(tid):
+                flash(pick('معرّف الجهة غير صحيح؛ انسخه كما هو من صفحة التطبيق في Azure.', 'The tenant ID is not valid; copy it as shown on the app page in Azure.'), 'error')
+                return redirect(url_for('admin.settings_microsoft'))
+            if cid and not re.match(r'^[0-9a-fA-F-]{36}$', cid):
+                flash(pick('معرّف التطبيق غير صحيح؛ انسخه كما هو من صفحة التطبيق في Azure.', 'The application ID is not valid; copy it as shown on the app page in Azure.'), 'error')
+                return redirect(url_for('admin.settings_microsoft'))
+            if sender and not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', sender):
+                flash(pick('بريد المرسل غير صحيح.', 'The sender mailbox is not valid.'), 'error')
+                return redirect(url_for('admin.settings_microsoft'))
+            vals.update(MS_TENANT_ID=tid, MS_CLIENT_ID=cid, MS_SENDER_EMAIL=sender)
+            if secret:
+                vals['MS_CLIENT_SECRET'] = secret
+            if request.form.get('clear_secret'):
+                vals['MS_CLIENT_SECRET'] = ''
+            tenant.save(vals)
+            flash(pick('حُفظت الإعدادات وطُبِّقت فوراً.', 'The settings were saved and applied at once.'), 'ok')
+            return redirect(url_for('admin.settings_microsoft') + '#test')
+        if action == 'test':
+            checks = tenant.test()
+    return render_template('admin/settings_microsoft.html', st=tenant.status(), checks=checks, redirect_uri=msauth.redirect_uri())
+
+
 @admin_bp.route('/help')
 @login_required
 def help_page():
     return render_template('admin/help.html')
+
+
+import people as _people  # noqa: E402  — مسارات المستهدفين والدعوات على admin_bp نفسه
+_people.register(admin_bp)

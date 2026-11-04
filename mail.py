@@ -99,3 +99,20 @@ def send_email(recipients, subject, html, kind=None):
     db.session.add(log)
     db.session.commit()
     return result
+
+
+def graph_get(path, limit=None):
+    """قراءة من Graph بصلاحيات التطبيق، مع متابعة الصفحات: قائمة العناصر (value)."""
+    token = _graph_token()
+    url = 'https://graph.microsoft.com/v1.0' + path
+    items = []
+    while url:
+        r = requests.get(url, headers={'Authorization': f'Bearer {token}', 'ConsistencyLevel': 'eventual'}, timeout=30)
+        if r.status_code != 200:
+            raise RuntimeError(f'Graph GET HTTP {r.status_code}')
+        d = r.json()
+        items += d.get('value', [])
+        if limit and len(items) >= limit:
+            return items[:limit]
+        url = d.get('@odata.nextLink')
+    return items

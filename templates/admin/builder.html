@@ -36,7 +36,7 @@
         <form method="post" action="{{ url_for('admin.form_duplicate', fid=f.id) }}"><button class="menu-btn" type="submit"><i class="fa-solid fa-copy"></i> {{ L('نسخ النموذج', 'Duplicate the form') }}</button></form>
         <form method="post" action="{{ url_for('admin.form_save_template', fid=f.id) }}"><button class="menu-btn" type="submit"><i class="fa-solid fa-swatchbook"></i> {{ L('حفظ قالباً', 'Save as template') }}</button></form>
         <form method="post" action="{{ url_for('admin.form_subform', fid=f.id) }}"><button class="menu-btn" type="submit"><i class="fa-solid fa-diagram-project"></i> {{ L('إنشاء نموذج فرعي', 'Create a sub-form') }}</button></form>
-        <a href="{{ url_for('admin.export', fid=f.id, fmt='form') }}"><i class="fa-solid fa-file-code"></i> {{ L('تصدير بنية النموذج (JSON)', 'Export form structure (JSON)') }}</a>
+        <a href="{{ url_for('admin.export', fid=f.id, fmt='form') }}"><i class="fa-solid fa-file-code"></i> {{ L('حفظ النموذج ملفاً لإعادة استخدامه', 'Save the form as a file to reuse') }}</a>
         <form method="post" action="{{ url_for('admin.form_delete', fid=f.id) }}" data-confirm="{{ L('حذف النموذج نهائياً؟', 'Delete this form permanently?') }}"><button class="menu-btn out" type="submit"><i class="fa-solid fa-trash"></i> {{ L('حذف النموذج', 'Delete the form') }}</button></form>
       </div></details>
   </div>
@@ -126,7 +126,7 @@
     <div class="card"><h2>{{ L('الإشعارات', 'Notifications') }}</h2>
       <label>{{ L('أرسل كل إجابة جديدة إلى (بريد أو أكثر)', 'Email every new response to (one or more addresses)') }}</label>
       <input type="text" data-s="notify_emails" dir="ltr" placeholder="name@school.edu.jo, ...">
-      {% if not mail_ready %}<p class="note warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('البريد غير مُعدّ في النظام؛ لن تُرسل الإشعارات حتى يُعدّ (الإعدادات).', 'Mail is not set up; notifications will not be sent until it is (Settings).') }}</p>{% endif %}
+      {% if not mail_ready %}<p class="note warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('البريد غير مربوط بعد، فلن تُرسل الإشعارات.', 'Mail is not connected yet, so notifications will not be sent.') }}</p>{% endif %}
     </div>
   </div>
 </section>
@@ -144,11 +144,11 @@
     </div>
     <div class="card"><h2>{{ L('الخلفية والموسيقى', 'Background and music') }}</h2>
       {{ media_field('bg_image', 'image', 'صورة الخلفية', 'Background image', 'image/*') }}
-      {{ media_field('bg_video', 'video', 'فيديو الخلفية (MP4 أو WebM، يعمل صامتاً ومتكرراً)', 'Background video (MP4 or WebM, muted and looping)', 'video/*') }}
+      {{ media_field('bg_video', 'video', 'فيديو الخلفية (يعمل صامتاً ومتكرراً)', 'Background video (plays muted and looping)', 'video/*') }}
       <div><label>{{ L('تعتيم الخلفية', 'Background dimming') }} <output id="ovOut"></output>%</label><input type="range" min="0" max="90" step="5" data-s="bg_overlay"></div>
       {{ media_field('bg_music', 'audio', 'موسيقى الخلفية (يشغّلها المستجيب بزر)', 'Background music (the respondent starts it with a button)', 'audio/*') }}
       <div><label>{{ L('مستوى صوت الموسيقى', 'Music volume') }}</label><input type="range" min="5" max="100" step="5" data-s="music_volume"></div>
-      <p class="note">{{ L('حجم الملف: الصور حتى 8 ميغابايت، والصوت حتى 20، والفيديو حتى 50. الملفات تُحفظ داخل النظام فتشملها النسخ الاحتياطية.', 'File size: images up to 8 MB, audio up to 20, video up to 50. Files are stored inside the system, so backups include them.') }}</p>
+      <p class="note">{{ L('أقصى حجم: الصورة 8 ميغابايت، والصوت 20، والفيديو 50. تُحفظ الملفات داخل النظام وتشملها النسخ الاحتياطية.', 'Largest size: image 8 MB, audio 20, video 50. Files are kept inside the system and included in backups.') }}</p>
     </div>
   </div>
 </section>
@@ -156,7 +156,7 @@
 <section class="tabpane" data-pane="access" hidden>
   <div class="grid2">
     <div class="card"><h2>{{ L('من يستطيع الإجابة', 'Who can answer') }}</h2>
-      <p class="note">{{ L('افتراضياً يجيب أي شخص معه الرابط دون دخول، ويُسجَّل الجهاز والمتصفح ونظام التشغيل وعنوان IP على الخادم.', 'By default anyone with the link can answer without signing in; the device, browser, system and IP address are recorded on the server.') }}</p>
+      <p class="note">{{ L('افتراضياً يجيب أي شخص معه الرابط دون دخول، ويحفظ النظام نوع الجهاز والمتصفح ونظام التشغيل وعنوان الشبكة مع كل إجابة.', 'By default anyone with the link can answer without signing in; the system keeps the device type, browser, operating system and network address with each response.') }}</p>
       {{ tog('require_email', 'يتطلب الدخول بالبريد الإلكتروني (رمز تحقق يصل إلى البريد)', 'Requires email sign-in (a code sent to the email)') }}
       <label>{{ L('طريقة الدخول', 'Sign-in method') }}</label>
       <select data-s="login_method">
@@ -164,7 +164,7 @@
         <option value="microsoft">{{ L('حساب Microsoft للمدرسة فقط', 'School Microsoft account only') }}</option>
         <option value="code">{{ L('رمز يصل إلى البريد فقط', 'Email code only') }}</option>
       </select>
-      {% if not mail_ready %}<p class="note warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('إعدادات Microsoft Graph ناقصة في النظام، فلن يعمل الدخول بالحساب ولا رمز البريد. أكملها بتشغيل 1_setup.bat.', 'Microsoft Graph settings are incomplete, so neither account sign-in nor email codes work. Complete them with 1_setup.bat.') }}</p>{% endif %}
+      {% if not mail_ready %}<p class="note warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('حساب Microsoft للمدرسة غير مربوط بعد، فلن يعمل الدخول بالحساب ولا رمز البريد.', 'The school Microsoft account is not connected yet, so neither account sign-in nor email codes work.') }}{% if me.is_admin %} <a href="{{ url_for('admin.settings_microsoft') }}">{{ L('ربط الحساب', 'Connect it') }}</a>{% endif %}</p>{% endif %}
       <label>{{ L('النطاقات المسموح بها فقط (اختياري)', 'Allowed email domains only (optional)') }}</label>
       <input type="text" data-s="email_domains" dir="ltr" placeholder="school.edu.jo, moe.gov.jo">
       {{ tog('one_per_email', 'إجابة واحدة لكل بريد', 'One response per email') }}
@@ -204,6 +204,9 @@
 
 <section class="tabpane" data-pane="share" hidden>
   {% if f.status != 'open' and not f.is_template %}<div class="alert warning" id="shareWarn">{{ L('النموذج ليس مفتوحاً، فلن يستطيع أحد الإجابة. غيّر الحالة إلى «مفتوح» من أعلى الصفحة.', 'The form is not open, so nobody can answer it. Change the status to "Open" at the top of the page.') }}</div>{% endif %}
+  <div class="card invite-card"><div><h2><i class="fa-solid fa-envelope-open-text"></i> {{ L('إرسال إلى المستهدفين', 'Send to people') }}</h2>
+    <p class="note">{{ L('ادعُ كل الأشخاص أو مجموعات أو أشخاصاً محددين بالبريد، وتابع من أجاب ومن لم يُجب، وأرسل التذكيرات.', 'Invite everyone, groups or chosen people by email, see who answered and who did not, and send reminders.') }}</p></div>
+    <a class="btn" href="{{ url_for('admin.audience', fid=f.id) }}"><i class="fa-solid fa-user-group"></i> {{ L('المدعوون', 'Invited people') }}</a></div>
   <div class="grid2">
     <div class="card"><h2><i class="fa-solid fa-link"></i> {{ L('الرابط', 'Link') }}</h2>
       <div class="copy-row"><input type="text" readonly value="{{ public_url }}" dir="ltr" id="pubUrl"><button type="button" data-copy="{{ public_url }}"><i class="fa-solid fa-copy"></i> {{ L('نسخ', 'Copy') }}</button></div>
@@ -219,16 +222,16 @@
       <div class="qr-box"><img id="qrImg" src="{{ url_for('admin.form_qr', fid=f.id) }}" alt="{{ L('رمز QR لرابط النموذج', 'QR code for the form link') }}" width="260"></div>
       <p class="note">{{ L('يحمل شعار الجهة واسمها وعنوان النموذج (من الإعدادات ← هوية الجهة)، ويُنشأ في النظام نفسه دون أي خدمة خارجية. نسخ النموذج يعطي النسخة رمزاً جديداً برابطها.', 'It carries the organization logo and name and the form title (Settings → identity), and is made by the system itself with no outside service. A copied form gets its own code for its own link.') }}</p>
       <div class="row-actions">
-        <button type="button" class="sm" id="qrPng" data-svg="{{ url_for('admin.form_qr', fid=f.id) }}" data-name="form-{{ f.slug }}-qr.png"><i class="fa-solid fa-image"></i> {{ L('تحميل PNG', 'Download PNG') }}</button>
-        <a class="btn sm ghost" href="{{ url_for('admin.form_qr', fid=f.id, download=1) }}"><i class="fa-solid fa-bezier-curve"></i> {{ L('تحميل SVG للطباعة', 'Download SVG for printing') }}</a>
+        <button type="button" class="sm" id="qrPng" data-svg="{{ url_for('admin.form_qr', fid=f.id) }}" data-name="form-{{ f.slug }}-qr.png"><i class="fa-solid fa-image"></i> {{ L('تحميل صورة', 'Download image') }}</button>
+        <a class="btn sm ghost" href="{{ url_for('admin.form_qr', fid=f.id, download=1) }}"><i class="fa-solid fa-bezier-curve"></i> {{ L('تحميل بجودة الطباعة', 'Download in print quality') }}</a>
         <a class="btn sm ghost" href="{{ url_for('admin.form_qr_print', fid=f.id, auto=1) }}" target="_blank" rel="noopener"><i class="fa-solid fa-print"></i> {{ L('طباعة', 'Print') }}</a>
       </div>
     </div>
-    <div class="card"><h2><i class="fa-solid fa-code"></i> {{ L('التضمين في موقع', 'Embed in a website') }}</h2>
+    <div class="card"><h2><i class="fa-solid fa-code"></i> {{ L('عرض النموذج داخل موقع', 'Show the form inside a website') }}</h2>
       {% set embed = '<iframe src="' ~ public_url ~ '?embed=1" width="100%" height="900" style="border:0;max-width:760px" loading="lazy" title="' ~ f.title ~ '"></iframe>' %}
       <textarea readonly rows="4" dir="ltr" class="code-area">{{ embed }}</textarea>
       <button type="button" class="sm" data-copy="{{ embed }}"><i class="fa-solid fa-copy"></i> {{ L('نسخ الكود', 'Copy the code') }}</button>
-      <p class="note">{{ L('النموذج المضمَّن لا يدعم الدخول بالبريد (المتصفحات تمنع ملفات تعريف الارتباط داخل الإطارات)؛ استخدم الرابط المباشر لهذه النماذج.', 'An embedded form cannot use email sign-in (browsers block cookies in frames); use the direct link for such forms.') }}</p>
+      <p class="note">{{ L('انسخ هذا الكود والصقه في صفحة موقع المدرسة. النماذج التي تتطلب الدخول تُشارَك بالرابط المباشر لا بالتضمين.', 'Copy this code into a page of the school website. Forms that need sign-in are shared by their direct link, not embedded.') }}</p>
     </div>
   </div>
 </section>

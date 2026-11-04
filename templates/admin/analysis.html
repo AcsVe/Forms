@@ -55,9 +55,9 @@
     {% if st.others %}<details><summary>{{ L('إجابات «أخرى»', '"Other" answers') }} ({{ st.others|length }})</summary><ul class="txt-list">{% for o in st.others %}<li>{{ o }}</li>{% endfor %}</ul></details>{% endif %}
   {% elif st.kind == 'numeric' %}
     <div class="stat-row"><div><b>{{ st.mean }}</b><small>{{ L('المتوسط', 'Mean') }}</small></div><div><b>{{ st.median }}</b><small>{{ L('الوسيط', 'Median') }}</small></div>
-      <div><b>{{ st.min }} – {{ st.max }}</b><small>{{ L('المدى', 'Range') }}</small></div><div><b>{{ st.sd }}</b><small>{{ L('الانحراف المعياري', 'Std. deviation') }}</small></div>
+      <div><b dir="ltr">{{ st.min }} – {{ st.max }}</b><small>{{ L('المدى', 'Range') }}</small></div><div><b>{{ st.sd }}</b><small>{{ L('الانحراف المعياري', 'Std. deviation') }}</small></div>
       {% if st.satisfaction is defined %}<div><b>{{ st.satisfaction }}%</b><small>{{ L('راضون (أعلى درجتين)', 'Satisfied (top two)') }}</small></div>{% endif %}
-      {% if st.nps %}<div class="nps-box"><b>{{ st.nps.score }}</b><small>NPS</small></div>{% endif %}</div>
+      {% if st.nps %}<div class="nps-box"><b>{{ st.nps.score }}</b><small>{{ L('صافي الترويج', 'Net promoter score') }}</small></div>{% endif %}</div>
     {% if st.nps %}<div class="nps-bar" role="img" aria-label="NPS"><span class="det" style="width:{{ st.nps.detractors }}%">{{ L('منتقدون', 'Detractors') }} {{ st.nps.detractors }}%</span><span class="pas" style="width:{{ st.nps.passives }}%">{{ L('محايدون', 'Passives') }} {{ st.nps.passives }}%</span><span class="pro" style="width:{{ st.nps.promoters }}%">{{ L('مروّجون', 'Promoters') }} {{ st.nps.promoters }}%</span></div>{% endif %}
     {{ chart('bar', st.dist|map(attribute='label')|list, [{'label': L('العدد', 'Count'), 'data': st.dist|map(attribute='n')|list}], 220) }}
   {% elif st.kind == 'matrix' %}
@@ -95,10 +95,8 @@
   {% for r in ct.rows %}<tr><th>{{ r.label }}</th>{% for n in r.counts %}<td style="--p:{{ r.pcts[loop.index0] }}">{{ n }} <span class="muted small">({{ r.pcts[loop.index0] }}%)</span></td>{% endfor %}<td><b>{{ r.total }}</b></td></tr>{% endfor %}
   <tr class="tot"><th>{{ L('المجموع', 'Total') }}</th>{% for n in ct.col_totals %}<td><b>{{ n }}</b></td>{% endfor %}<td><b>{{ ct.grand }}</b></td></tr>
   </tbody></table></div>
-  {% if ct.chi %}<p class="note">{{ L('اختبار كاي تربيع للاستقلال', 'Chi-square test of independence') }}: χ² = {{ ct.chi.x2 }}، {{ L('درجات الحرية', 'df') }} = {{ ct.chi.dof }}، p = {{ ct.chi.p }} —
-    {% if ct.chi.p < 0.05 %}<b>{{ L('توجد علاقة ذات دلالة إحصائية بين السؤالين (p أقل من 0.05).', 'There is a statistically significant relationship (p below 0.05).') }}</b>{% else %}{{ L('لا تظهر علاقة ذات دلالة إحصائية.', 'No statistically significant relationship.') }}{% endif %}
-    {{ L('(للإرشاد؛ يحتاج عدداً كافياً من الإجابات)', '(a guide; it needs enough responses)') }}</p>{% endif %}
-  <a class="btn sm ghost" href="{{ url_for('admin.analysis', fid=f.id, ct='csv', **args) }}"><i class="fa-solid fa-file-csv"></i> {{ L('تصدير الجدول CSV', 'Export the table as CSV') }}</a>
+  {% if ct.chi %}<p class="note"><i class="fa-solid fa-lightbulb"></i> {% if ct.chi.p < 0.05 %}<b>{{ L('توجد علاقة واضحة بين إجابات السؤالين، أي أن الإجابة عن أحدهما ترتبط بالإجابة عن الآخر.', 'There is a clear link between the answers to the two questions: the answer to one goes with the answer to the other.') }}</b>{% else %}{{ L('لا تظهر علاقة واضحة بين إجابات السؤالين.', 'There is no clear link between the answers to the two questions.') }}{% endif %} {{ L('(تقدير إحصائي يحتاج عدداً كافياً من الإجابات)', '(a statistical estimate that needs enough responses)') }}</p>{% endif %}
+  <a class="btn sm ghost" href="{{ url_for('admin.analysis', fid=f.id, ct='csv', **args) }}"><i class="fa-solid fa-file-csv"></i> {{ L('تصدير الجدول إلى Excel', 'Export the table to Excel') }}</a>
   {% endif %}
 </div>
 {% endif %}

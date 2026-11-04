@@ -22,7 +22,9 @@ for ext in ('', '-wal', '-shm'):
         os.remove(DB + ext)
 PORT = 5099
 BASE = f'http://127.0.0.1:{PORT}'
-os.environ.update(FORMS_DB_PATH=DB, DATA_DIR=OUT, PYTHONUTF8='1')
+os.environ.update(FORMS_DB_PATH=DB, DATA_DIR=OUT, PYTHONUTF8='1', FORMS_NO_DOTENV='1')
+for _k in ('MS_TENANT_ID', 'MS_CLIENT_ID', 'MS_CLIENT_SECRET', 'MS_SENDER_EMAIL'):
+    os.environ.pop(_k, None)
 os.environ.pop('DATABASE_URL', None)
 sys.path.insert(0, ROOT)
 
@@ -203,6 +205,41 @@ try:
         if page.locator('.qcard').count() != 4:
             note('import: created form does not have 4 questions')
 
+        print('people: add, import, invite a group, personal link')
+        check(page, errs, '/admin/people')
+        page.fill('#p_name', 'هند سامي')
+        page.fill('#p_email', 'hind@school.jo')
+        page.click('#personForm button[type=submit]')
+        page.wait_for_load_state('networkidle')
+        if 'hind@school.jo' not in page.inner_text('table[data-table]'):
+            note('people: the new person is not in the list')
+        csvf = os.path.join(OUT, 'people.csv')
+        with open(csvf, 'w', encoding='utf-8-sig') as fh:
+            fh.write('الاسم,البريد,المجموعات\nمعلم أول,t1@school.jo,معلمو العلوم\nمعلم ثانٍ,t2@school.jo,معلمو العلوم\n')
+        check(page, errs, '/admin/people/import')
+        with page.expect_download() as dl:
+            page.click('a[href$="template.xlsx"]')
+        if os.path.getsize(dl.value.path()) < 3000:
+            note('people: template file too small')
+        page.set_input_files('#file', csvf)
+        page.click('form[enctype] button[type=submit]')
+        page.wait_for_selector('.result-card')
+        if '2' not in page.inner_text('.result-card .stat-row'):
+            note('people import: result not shown')
+        check(page, errs, f'/admin/forms/{RICH_ID}/audience')
+        page.check('input[name=mode][value=groups]')
+        page.check('.pick-box[data-for=groups] label:has-text("معلمو العلوم") input')
+        page.click('form.side-form:has(input[name=mode]) button[type=submit]')
+        page.wait_for_load_state('networkidle')
+        rows = page.locator('table[data-table] tbody tr').count()
+        if rows != 2:
+            note(f'audience: expected 2 invited people, got {rows}')
+        with app.app_context():
+            from models import Invitation
+            inv_token = Invitation.query.filter_by(form_id=RICH_ID).first().token
+        for e in errs:
+            note('people: ' + e)
+
         print('tables: search and export')
         check(page, errs, f'/admin/forms/{RICH_ID}/responses')
         page.fill('.dt-tools input[type=search]', 'طالب 1')
@@ -319,6 +356,13 @@ try:
                 note(f'fill: grid/file/signature missing: {a.get("lik")}, {a.get("doc")}, {a.get("sig")}')
             if r.device != 'mobile' or r.os != 'iOS' or not (r.meta or {}).get('screen'):
                 note(f'fill: device info {r.device} {r.os} {r.meta}')
+
+        print('opening a personal invitation link is recorded')
+        check(fp, ferrs, f'/f/{RICH_SLUG}?inv={inv_token}')
+        with app.app_context():
+            from models import Invitation
+            if not Invitation.query.filter_by(token=inv_token).one().opened_at:
+                note('invitation: opening the link was not recorded')
 
         print('english switch on a bilingual form')
         check(fp, ferrs, f'/f/{RICH_SLUG}?lang=en', lang='en')

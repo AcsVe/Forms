@@ -16,7 +16,7 @@
   <div class="done-actions">
     {% if f.s('allow_another') %}<a class="f-btn" href="{{ url_for('public.fill', slug=f.slug, preview=1) if preview else url_for('public.fill', slug=f.slug) }}"><i class="fa-solid fa-rotate"></i> {{ L('إرسال إجابة أخرى', 'Submit another response') }}</a>{% endif %}
     <button type="button" class="f-btn ghost" id="showMine"><i class="fa-solid fa-list"></i> {{ L('عرض إجاباتي', 'Show my answers') }}</button>
-    <button type="button" class="f-btn ghost" id="printBtn"><i class="fa-solid fa-print"></i> {{ L('طباعة أو حفظ PDF', 'Print or save as PDF') }}</button>
+    <button type="button" class="f-btn ghost" id="printBtn"><i class="fa-solid fa-print"></i> {{ L('طباعة أو حفظ نسخة', 'Print or save a copy') }}</button>
   </div>
   {% if subs and f.s('show_subforms') %}
   <div class="subs"><h2>{{ L('نماذج مرتبطة يمكنك تعبئتها الآن', 'Related forms you can fill in now') }}</h2>

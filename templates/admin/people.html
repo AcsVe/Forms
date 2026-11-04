@@ -1,0 +1,110 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% from 'admin/_macros.html' import kpi with context %}
+{% block title %}{{ L('المستهدفون', 'People') }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ L('المستهدفون', 'People') }}</h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('admin.people_import') }}"><i class="fa-solid fa-file-import"></i> {{ L('استيراد من ملف', 'Import from a file') }}</a>
+    {% if ms_ok %}<a class="btn ghost" href="{{ url_for('admin.people_microsoft') }}"><i class="fa-brands fa-microsoft"></i> {{ L('استيراد من Microsoft', 'Import from Microsoft') }}</a>{% endif %}
+  </div>
+</div>
+<p class="lead">{{ L('الأشخاص الذين تُرسل إليهم النماذج، مرتبين في مجموعات. تُرسل الدعوة من صفحة «المدعوون» في كل نموذج.', 'The people you send forms to, arranged in groups. Invitations are sent from the "Invited" page of each form.') }}</p>
+<div class="kpis">
+  {{ kpi(url_for('admin.people'), total, 'كل الأشخاص', 'All people', 'fa-users') }}
+  {{ kpi(url_for('admin.people', status='active'), n_active, 'فعّالون', 'Active', 'fa-user-check', 'ok') }}
+  {{ kpi(url_for('admin.people', status='inactive'), total - n_active, 'معطّلون', 'Inactive', 'fa-user-slash', 'bad') }}
+  {{ kpi(url_for('admin.people') ~ '#groups', groups|length, 'المجموعات', 'Groups', 'fa-people-group', 'violet') }}
+</div>
+<nav class="tabbar" data-tabs>
+  <a data-tab="list" href="#list"><i class="fa-solid fa-user"></i> {{ L('الأشخاص', 'People') }} <span class="count">{{ rows|length }}</span></a>
+  <a data-tab="groups" href="#groups"><i class="fa-solid fa-people-group"></i> {{ L('المجموعات', 'Groups') }} <span class="count">{{ groups|length }}</span></a>
+</nav>
+
+<section class="tabpane" data-pane="list">
+{% if args.get('group') or args.get('status') %}<p class="hint">{{ L('القائمة مُصفّاة.', 'The list is filtered.') }} <a href="{{ url_for('admin.people') }}">{{ L('إلغاء التصفية', 'Clear the filter') }}</a></p>{% endif %}
+<div class="split">
+<div class="card">
+{% set gsel %}<select name="group_id" form="bulk-people" aria-label="{{ L('المجموعة', 'Group') }}" class="sm-select"><option value="">{{ L('اختر مجموعة…', 'Choose a group…') }}</option>{% for g in groups %}<option value="{{ g.id }}">{{ g.name }}</option>{% endfor %}</select>{% endset %}
+{{ bulk_bar('people', [('add_group', 'إضافة إلى المجموعة', 'Add to group', false, gsel), ('remove_group', 'إخراج من المجموعة', 'Remove from group', false),
+                       ('activate', 'تفعيل', 'Activate', false), ('deactivate', 'تعطيل', 'Deactivate', false), ('delete', 'حذف', 'Delete', true)]) }}
+{% if rows %}
+<div class="dt-wrap"><table data-table class="resp">
+<thead><tr><th class="chk" data-nosort>{{ bulk_all('people') }}</th>
+  <th data-filter="text">{{ L('الاسم', 'Name') }}</th><th data-filter="text">{{ L('البريد', 'Email') }}</th>
+  <th data-filter="text">{{ L('الهاتف', 'Phone') }}</th><th data-filter="text">{{ L('المجموعات', 'Groups') }}</th>
+  <th data-filter="text">{{ L('ملاحظة', 'Note') }}</th><th data-filter="select">{{ L('الحالة', 'Status') }}</th>
+  <th data-filter="select">{{ L('المصدر', 'Source') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
+{% for p in rows %}<tr data-row>
+  <td class="chk">{{ bulk_item('people', p.id) }}</td>
+  <td><b>{{ p.name }}</b></td><td dir="ltr" class="ltr-cell">{{ p.email or '' }}</td><td dir="ltr" class="ltr-cell">{{ p.phone or '' }}</td>
+  <td>{% for g in p.groups %}<a class="chip" href="{{ url_for('admin.people', group=g.id) }}">{{ g.name }}</a>{% endfor %}</td>
+  <td>{{ p.note or '' }}</td>
+  <td>{% if p.active %}<span class="badge ok">{{ L('فعّال', 'Active') }}</span>{% else %}<span class="badge bad">{{ L('معطّل', 'Inactive') }}</span>{% endif %}</td>
+  <td>{{ 'Microsoft' if p.source == 'microsoft' else L('محلي', 'Local') }}</td>
+  <td class="act"><button type="button" class="sm ghost" data-person='{{ {"id": p.id, "name": p.name, "email": p.email or "", "phone": p.phone or "", "note": p.note or "", "groups": p.groups|map(attribute="id")|list}|tojson }}'>{{ L('تعديل', 'Edit') }}</button></td>
+</tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="empty"><i class="fa-solid fa-users"></i><p>{{ L('لا يوجد أشخاص بعد. أضفهم من النموذج المجاور أو استوردهم من ملف.', 'No people yet. Add them with the form beside this list or import them from a file.') }}</p></div>{% endif %}
+</div>
+<form class="card side-form" method="post" action="{{ url_for('admin.person_save') }}" id="personForm" autocomplete="off">
+  <h2 id="pfTitle">{{ L('شخص جديد', 'New person') }}</h2>
+  <input type="hidden" name="id" id="p_id">
+  <label for="p_name">{{ L('الاسم', 'Name') }}</label><input type="text" id="p_name" name="name" required maxlength="200">
+  <label for="p_email">{{ L('البريد', 'Email') }}</label><input type="email" id="p_email" name="email" required dir="ltr">
+  <label for="p_phone">{{ L('الهاتف (اختياري)', 'Phone (optional)') }}</label><input type="text" id="p_phone" name="phone" dir="ltr">
+  <label for="p_note">{{ L('ملاحظة (اختيارية)', 'Note (optional)') }}</label><input type="text" id="p_note" name="note" placeholder="{{ L('مثال: معلم، طالب، ولي أمر', 'e.g. teacher, student, parent') }}">
+  <label>{{ L('المجموعات', 'Groups') }}</label>
+  <div class="check-list">{% for g in groups %}<label class="check"><input type="checkbox" name="groups" value="{{ g.id }}"> {{ g.name }}</label>{% else %}<span class="muted">{{ L('لا توجد مجموعات بعد.', 'No groups yet.') }}</span>{% endfor %}</div>
+  <div class="row-actions"><button type="submit">{{ L('حفظ', 'Save') }}</button><button type="reset" class="ghost" id="pfReset">{{ L('جديد', 'New') }}</button></div>
+</form>
+</div>
+</section>
+
+<section class="tabpane" data-pane="groups" hidden>
+<div class="split">
+<div class="card">
+{{ bulk_bar('groups', [('activate', 'تفعيل', 'Activate', false), ('deactivate', 'تعطيل', 'Deactivate', false), ('delete', 'حذف', 'Delete', true)]) }}
+{% if groups %}
+<div class="dt-wrap"><table data-table class="resp">
+<thead><tr><th class="chk" data-nosort>{{ bulk_all('groups') }}</th><th data-filter="text">{{ L('المجموعة', 'Group') }}</th>
+  <th data-filter="text">{{ L('الوصف', 'Description') }}</th><th data-sort="num">{{ L('الأعضاء', 'Members') }}</th>
+  <th data-filter="select">{{ L('الحالة', 'Status') }}</th><th data-filter="select">{{ L('المصدر', 'Source') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
+{% for g in groups %}<tr data-row>
+  <td class="chk">{{ bulk_item('groups', g.id) }}</td>
+  <td><a href="{{ url_for('admin.people', group=g.id) }}"><b>{{ g.name }}</b></a></td><td>{{ g.description or '' }}</td>
+  <td data-value="{{ counts.get(g.id, 0) }}"><a href="{{ url_for('admin.people', group=g.id) }}">{{ counts.get(g.id, 0) }}</a></td>
+  <td>{% if g.active %}<span class="badge ok">{{ L('فعّالة', 'Active') }}</span>{% else %}<span class="badge bad">{{ L('معطّلة', 'Inactive') }}</span>{% endif %}</td>
+  <td>{{ 'Microsoft' if g.source == 'microsoft' else L('محلية', 'Local') }}</td>
+  <td class="act"><button type="button" class="sm ghost" data-group='{{ {"id": g.id, "name": g.name, "description": g.description or ""}|tojson }}'>{{ L('تعديل', 'Edit') }}</button></td>
+</tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="empty"><i class="fa-solid fa-people-group"></i><p>{{ L('لا توجد مجموعات بعد.', 'No groups yet.') }}</p></div>{% endif %}
+</div>
+<form class="card side-form" method="post" action="{{ url_for('admin.group_save') }}" id="groupForm" autocomplete="off">
+  <h2 id="gfTitle">{{ L('مجموعة جديدة', 'New group') }}</h2>
+  <input type="hidden" name="id" id="g_id">
+  <label for="g_name">{{ L('اسم المجموعة', 'Group name') }}</label><input type="text" id="g_name" name="name" required maxlength="200" placeholder="{{ L('مثال: معلمو العلوم', 'e.g. Science teachers') }}">
+  <label for="g_desc">{{ L('الوصف (اختياري)', 'Description (optional)') }}</label><input type="text" id="g_desc" name="description" maxlength="500">
+  <div class="row-actions"><button type="submit">{{ L('حفظ', 'Save') }}</button><button type="reset" class="ghost" id="gfReset">{{ L('جديدة', 'New') }}</button></div>
+</form>
+</div>
+</section>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll('[data-person]').forEach((b) => b.addEventListener('click', () => {
+  const p = JSON.parse(b.dataset.person);
+  ['id', 'name', 'email', 'phone', 'note'].forEach((k) => { document.getElementById('p_' + k).value = p[k]; });
+  document.querySelectorAll('#personForm input[name=groups]').forEach((c) => { c.checked = p.groups.includes(Number(c.value)); });
+  document.getElementById('pfTitle').textContent = {{ L('تعديل', 'Edit')|tojson }} + ': ' + p.name;
+  document.getElementById('personForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
+document.getElementById('pfReset').addEventListener('click', () => { document.getElementById('p_id').value = ''; document.getElementById('pfTitle').textContent = {{ L('شخص جديد', 'New person')|tojson }}; });
+document.querySelectorAll('[data-group]').forEach((b) => b.addEventListener('click', () => {
+  const g = JSON.parse(b.dataset.group);
+  document.getElementById('g_id').value = g.id; document.getElementById('g_name').value = g.name; document.getElementById('g_desc').value = g.description;
+  document.getElementById('gfTitle').textContent = {{ L('تعديل', 'Edit')|tojson }} + ': ' + g.name;
+}));
+document.getElementById('gfReset').addEventListener('click', () => { document.getElementById('g_id').value = ''; document.getElementById('gfTitle').textContent = {{ L('مجموعة جديدة', 'New group')|tojson }}; });
+</script>{% endblock %}

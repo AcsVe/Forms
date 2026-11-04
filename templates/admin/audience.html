@@ -1,0 +1,86 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% from 'admin/_macros.html' import form_tabs, kpi with context %}
+{% block title %}{{ L('المدعوون', 'Invited') }} — {{ f.title }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ f.title_for(lang) }}</h1>
+  <div class="actions"><a class="btn ghost" href="{{ url_for('admin.audience_links', fid=f.id) }}"><i class="fa-solid fa-file-excel"></i> {{ L('الروابط الشخصية (Excel)', 'Personal links (Excel)') }}</a>
+    <a class="btn ghost" href="{{ url_for('admin.builder', fid=f.id) }}#share"><i class="fa-solid fa-qrcode"></i> {{ L('الرابط العام ورمز QR', 'Public link and QR code') }}</a></div></div>
+{{ form_tabs(f, 'audience') }}
+{% if f.status != 'open' %}<div class="alert warning">{{ L('النموذج ليس مفتوحاً؛ تُضاف الأسماء الآن، ولا تُرسل الدعوات حتى تغيّر حالته إلى «مفتوح».', 'The form is not open; you can add people now, but invitations are sent only after it is open.') }}</div>{% endif %}
+{% if not mail_ready %}<div class="alert warning">{{ L('البريد غير مربوط بعد، فلن تُرسل الدعوات بالبريد. يمكنك تصدير الروابط الشخصية وإرسالها بطريقة أخرى، أو ربط حساب Microsoft من الإعدادات.', 'Mail is not connected yet, so invitations cannot be emailed. Export the personal links and send them another way, or connect the Microsoft account in Settings.') }}</div>{% endif %}
+
+<div class="kpis">
+  {{ kpi(url_for('admin.audience', fid=f.id), k.all, 'كل المدعوين', 'All invited', 'fa-users') }}
+  {{ kpi(url_for('admin.audience', fid=f.id, status='responded'), k.responded, 'أجابوا', 'Answered', 'fa-circle-check', 'ok') }}
+  {{ kpi(url_for('admin.audience', fid=f.id, status='waiting'), k.waiting, 'لم يُجيبوا', 'Not answered', 'fa-hourglass-half', 'warn') }}
+  {{ kpi(url_for('admin.audience', fid=f.id, status='opened'), k.opened, 'فتحوا ولم يُرسلوا', 'Opened, not sent', 'fa-envelope-open') }}
+  {{ kpi(url_for('admin.audience', fid=f.id, status='pending'), k.pending, 'لم تُرسل دعوتهم', 'Not invited yet', 'fa-paper-plane', 'violet') }}
+  {{ kpi(url_for('admin.audience', fid=f.id, status='failed'), k.failed, 'تعذّر الإرسال', 'Sending failed', 'fa-triangle-exclamation', 'bad') }}
+</div>
+
+<div class="split">
+<div class="card">
+  <h2>{{ L('قائمة المدعوين', 'Invited people') }}{% if st %} <a class="small" href="{{ url_for('admin.audience', fid=f.id) }}">({{ L('إلغاء التصفية', 'clear the filter') }})</a>{% endif %}</h2>
+  {{ bulk_bar('invitations', [('send', 'إرسال الدعوة أو التذكير', 'Send invitation or reminder', false), ('delete', 'حذف من القائمة', 'Remove from the list', true)]) }}
+  {% if invs %}
+  <div class="dt-wrap"><table data-table class="resp"><thead><tr><th class="chk" data-nosort>{{ bulk_all('invitations') }}</th>
+    <th data-filter="text">{{ L('الاسم', 'Name') }}</th><th data-filter="text">{{ L('البريد', 'Email') }}</th>
+    <th data-filter="select">{{ L('الحالة', 'Status') }}</th><th data-sort="num">{{ L('مرات الإرسال', 'Times sent') }}</th>
+    <th>{{ L('آخر إرسال', 'Last sent') }}</th><th>{{ L('وقت الإجابة', 'Answered at') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
+  {% for i in invs %}<tr data-row>
+    <td class="chk">{{ bulk_item('invitations', i.id) }}</td>
+    <td><b>{{ i.person.name }}</b>{% if i.person.groups %}<div class="muted small">{{ i.person.groups|map(attribute='name')|join('، ') }}</div>{% endif %}</td>
+    <td dir="ltr" class="ltr-cell">{{ i.person.email }}</td>
+    {% set labels = {'responded': (L('أجاب', 'Answered'), 'ok'), 'opened': (L('فتح ولم يُرسل', 'Opened'), 'warn'), 'sent': (L('أُرسلت الدعوة', 'Invited'), ''), 'pending': (L('لم تُرسل بعد', 'Not sent yet'), ''), 'failed': (L('تعذّر الإرسال', 'Failed'), 'bad')} %}
+    <td><span class="badge {{ labels[i.status][1] }}">{{ labels[i.status][0] }}</span></td>
+    <td data-value="{{ i.send_count }}">{{ i.send_count }}</td>
+    <td class="small nowrap">{{ i.last_sent_at|local }}</td>
+    <td class="small nowrap">{% if i.response_id %}<a href="{{ url_for('admin.response_view', rid=i.response_id) }}">{{ i.responded_at|local }}</a>{% endif %}</td>
+    <td class="act"><button type="button" class="sm ghost" data-copy="{{ link(f, i) }}" title="{{ L('نسخ الرابط الشخصي', 'Copy the personal link') }}"><i class="fa-solid fa-link"></i> {{ L('الرابط', 'Link') }}</button></td>
+  </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><i class="fa-solid fa-user-plus"></i><p>{{ L('لا يوجد مدعوون بعد. اختر من النموذج المجاور.', 'Nobody is invited yet. Choose from the form beside this list.') }}</p></div>{% endif %}
+</div>
+
+<div class="side-col">
+  <form class="card side-form" method="post">
+    <h2>{{ L('إضافة مدعوين', 'Invite people') }}</h2>
+    <div class="seg">
+      <label><input type="radio" name="mode" value="all" checked> {{ L('كل الأشخاص الفعّالين', 'Every active person') }} ({{ people|length }})</label>
+      <label><input type="radio" name="mode" value="groups"> {{ L('مجموعات محددة', 'Selected groups') }}</label>
+      <label><input type="radio" name="mode" value="people"> {{ L('أشخاص محددون', 'Selected people') }}</label>
+    </div>
+    <div class="pick-box" data-for="groups" hidden>
+      <input type="search" class="pick-q" placeholder="{{ L('بحث في المجموعات…', 'Search groups…') }}" aria-label="{{ L('بحث في المجموعات', 'Search groups') }}">
+      <div class="check-list tall">{% for g in groups %}<label class="check" data-q="{{ g.name|lower }}"><input type="checkbox" name="group_ids" value="{{ g.id }}"> {{ g.name }} <span class="muted small">({{ counts.get(g.id, 0) }})</span></label>{% else %}<span class="muted">{{ L('لا توجد مجموعات.', 'No groups.') }}</span>{% endfor %}</div>
+    </div>
+    <div class="pick-box" data-for="people" hidden>
+      <input type="search" class="pick-q" placeholder="{{ L('بحث بالاسم أو البريد…', 'Search by name or email…') }}" aria-label="{{ L('بحث في الأشخاص', 'Search people') }}">
+      <div class="check-list tall">{% for p in people %}<label class="check" data-q="{{ (p.name ~ ' ' ~ (p.email or ''))|lower }}"><input type="checkbox" name="person_ids" value="{{ p.id }}"> {{ p.name }}</label>{% else %}<span class="muted">{{ L('لا يوجد أشخاص.', 'No people.') }}</span>{% endfor %}</div>
+    </div>
+    <label class="check"><input type="checkbox" name="send" value="1"{{ ' checked' if mail_ready and f.status == 'open' }}{{ ' disabled' if not mail_ready }}> {{ L('أرسل الدعوة بالبريد الآن', 'Email the invitation now') }}</label>
+    <p class="note">{{ L('لكل مدعو رابط شخصي يعرف به النظام من أجاب. من سبقت دعوته لا يتكرر.', 'Each person gets a personal link, so the system knows who answered. Nobody is invited twice.') }}</p>
+    {% if not people %}<p class="warn-text">{{ L('أضف الأشخاص أولاً من صفحة «المستهدفون».', 'Add people first on the "People" page.') }} <a href="{{ url_for('admin.people') }}">{{ L('فتح الصفحة', 'Open the page') }}</a></p>{% endif %}
+    <button type="submit"{{ ' disabled' if not people }}><i class="fa-solid fa-user-plus"></i> {{ L('إضافة', 'Add') }}</button>
+  </form>
+  <form class="card side-form" method="post">
+    <h2>{{ L('من يستطيع الإجابة', 'Who can answer') }}</h2>
+    <input type="hidden" name="action" value="settings">
+    <label class="switch"><input type="checkbox" name="audience_only" value="1"{{ ' checked' if f.s('audience_only') }}><span class="sl"></span><span>{{ L('المدعوون فقط (برابطهم الشخصي)', 'Invited people only (with their personal link)') }}</span></label>
+    <p class="note">{{ L('عند إيقافه يجيب أيضاً كل من معه الرابط العام أو رمز QR، وتبقى المتابعة للمدعوين.', 'When off, anyone with the public link or QR code can also answer; tracking still covers the invited people.') }}</p>
+    <button type="submit" class="ghost">{{ L('حفظ', 'Save') }}</button>
+  </form>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+(function () {
+  const boxes = document.querySelectorAll('.pick-box');
+  const sync = () => { const m = document.querySelector('input[name=mode]:checked').value; boxes.forEach((b) => { b.hidden = b.dataset.for !== m; }); };
+  document.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', sync)); sync();
+  document.querySelectorAll('.pick-q').forEach((q) => q.addEventListener('input', () => {
+    const v = normText(q.value);
+    q.parentNode.querySelectorAll('[data-q]').forEach((l) => { l.hidden = v && !normText(l.dataset.q).includes(v); });
+  }));
+})();
+</script>{% endblock %}

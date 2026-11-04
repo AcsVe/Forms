@@ -32,7 +32,7 @@
   <p class="draft-note" id="draftNote" hidden><i class="fa-solid fa-floppy-disk"></i> {{ L('تُحفظ إجاباتك في هذا الجهاز تلقائياً حتى ترسلها.', 'Your answers are kept on this device until you submit.') }}
     <button type="button" class="linkish" id="clearDraft">{{ L('مسح المسودة', 'Clear the draft') }}</button></p>
 </form>
-<noscript><div class="f-card"><p>{{ L('يحتاج هذا النموذج إلى تفعيل JavaScript في المتصفح.', 'This form needs JavaScript to be enabled in the browser.') }}</p></div></noscript>
+<noscript><div class="f-card"><p>{{ L('لا يعمل هذا النموذج في هذا المتصفح. افتحه في متصفح حديث.', 'This form does not work in this browser. Open it in an up-to-date browser.') }}</p></div></noscript>
 {% endblock %}
 {% block scripts %}
 <script>window.FILL = {{ data|tojson }};</script>

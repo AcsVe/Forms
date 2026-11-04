@@ -14,22 +14,19 @@
   <button type="submit" style="margin-top:12px">{{ L('حفظ', 'Save') }}</button>
 </form>
 <div class="card">
-  <h2>{{ L('البريد (Microsoft Graph)', 'Mail (Microsoft Graph)') }}</h2>
-  <div class="graph-status">
-    {% for k, lab in [('tenant', 'MS_TENANT_ID'), ('client', 'MS_CLIENT_ID'), ('secret', 'MS_CLIENT_SECRET')] %}<span class="badge {{ 'ok' if mail[k] else 'bad' }}">{{ lab }} {{ '✓' if mail[k] else '✗' }}</span>{% endfor %}
-    <span class="badge {{ 'ok' if mail.sender else 'bad' }}">{{ L('المرسل', 'Sender') }}: {{ mail.sender or '—' }}</span>
-    <p class="note">{{ L('القيم في ملف .env على الخادم، ويضعها 1_setup.bat (ويأخذها من نظام آخر على الجهاز إن وُجدت). البريد لازم لرموز الدخول إلى النماذج المحمية وللإشعارات.', 'The values live in .env on the server; 1_setup.bat writes them (taking them from another system on the PC if present). Mail is needed for sign-in codes and notifications.') }}</p>
-  </div>
-  <h3 class="sub-h">{{ L('الدخول بحساب Microsoft للمدرسة في النماذج', 'School Microsoft account sign-in for forms') }}</h3>
-  <p class="note">{{ L('يستخدم تسجيل التطبيق نفسه. يلزم مرة واحدة في بوابة Azure ← تسجيل التطبيق: أضف عنوان إعادة التوجيه الآتي من نوع Web، وأضف صلاحيات Microsoft Graph المفوّضة openid وprofile وemail وUser.Read ثم امنح موافقة المسؤول.', 'It uses the same app registration. Once in the Azure portal → app registration: add this Web redirect URI, and the delegated Microsoft Graph permissions openid, profile, email and User.Read, then grant admin consent.') }}</p>
-  <div class="copy-row"><input type="text" readonly dir="ltr" value="{{ ms_redirect }}"><button type="button" data-copy="{{ ms_redirect }}">{{ L('نسخ', 'Copy') }}</button></div>
+  <h2>{{ L('البريد', 'Mail') }}
+    {% if mail.ready %}<span class="badge ok">{{ L('يعمل', 'Working') }}</span>{% else %}<span class="badge bad">{{ L('غير مربوط', 'Not connected') }}</span>{% endif %}</h2>
+  <p class="note">{{ L('يُرسل البريد عبر حساب Microsoft للمدرسة: الدعوات، والتذكيرات، ورموز الدخول، والإشعارات.', 'Mail goes through the school Microsoft account: invitations, reminders, sign-in codes and notifications.') }}
+    <a href="{{ url_for('admin.settings_microsoft') }}">{{ L('إعدادات حساب Microsoft', 'Microsoft account settings') }}</a></p>
   <form method="post" class="row" style="margin-top:10px"><input type="hidden" name="action" value="test_mail">
     <div><label for="to">{{ L('أرسل رسالة تجربة إلى', 'Send a test message to') }}</label><input type="email" id="to" name="to" required dir="ltr" value="{{ me.email or '' }}"></div>
     <div class="shrink"><button type="submit">{{ L('إرسال', 'Send') }}</button></div></form>
   <h3 class="sub-h">{{ L('سجل البريد', 'Mail log') }}</h3>
-  <div class="dt-wrap"><table data-table><thead><tr><th>{{ L('الوقت', 'Time') }}</th><th data-filter="select">{{ L('النوع', 'Kind') }}</th><th data-filter="text">{{ L('إلى', 'To') }}</th><th data-filter="select">{{ L('الحالة', 'Status') }}</th><th>{{ L('الخطأ', 'Error') }}</th></tr></thead><tbody>
-  {% for l in logs %}<tr><td class="small nowrap">{{ l.created_at|local }}</td><td>{{ l.kind or '' }}</td><td class="small" dir="ltr">{{ l.recipients }}</td><td><span class="badge {{ 'ok' if l.status == 'sent' else 'bad' }}">{{ l.status }}</span></td><td class="small">{{ (l.error or '')[:160] }}</td></tr>
-  {% else %}<tr><td colspan="5" class="muted">{{ L('لا رسائل بعد.', 'No messages yet.') }}</td></tr>{% endfor %}</tbody></table></div>
+  <div class="dt-wrap"><table data-table><thead><tr><th>{{ L('الوقت', 'Time') }}</th><th data-filter="select">{{ L('النوع', 'Kind') }}</th><th data-filter="text">{{ L('إلى', 'To') }}</th><th data-filter="select">{{ L('الحالة', 'Status') }}</th></tr></thead><tbody>
+  {% set kinds = {'invite': L('دعوة', 'Invitation'), 'reminder': L('تذكير', 'Reminder'), 'code': L('رمز دخول', 'Sign-in code'), 'notify': L('إشعار بإجابة', 'New response'), 'copy': L('نسخة للمستجيب', 'Copy to respondent'), 'reset': L('استعادة كلمة المرور', 'Password reset'), 'test': L('تجربة', 'Test')} %}
+  {% for l in logs %}<tr><td class="small nowrap">{{ l.created_at|local }}</td><td>{{ kinds.get(l.kind, l.kind or '') }}</td><td class="small ltr-cell" dir="ltr">{{ l.recipients }}</td>
+    <td>{% if l.status == 'sent' %}<span class="badge ok">{{ L('أُرسلت', 'Sent') }}</span>{% else %}<span class="badge bad">{{ L('لم تُرسل', 'Not sent') }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">{{ L('لا رسائل بعد.', 'No messages yet.') }}</td></tr>{% endfor %}</tbody></table></div>
 </div>
 </div>
 {% endblock %}

@@ -215,6 +215,73 @@ class PasswordReset(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+person_groups = db.Table(
+    'person_groups',
+    db.Column('person_id', db.Integer, db.ForeignKey('people.id'), primary_key=True),
+    db.Column('group_id', db.Integer, db.ForeignKey('groups.id'), primary_key=True),
+)
+
+
+class Group(db.Model):
+    """مجموعة مستهدفين (صف، قسم، لجنة…): محلية أو مستوردة من دليل Microsoft."""
+    __tablename__ = 'groups'
+    id          = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500))
+    active      = db.Column(db.Boolean, nullable=False, default=True)
+    source      = db.Column(db.String(20), nullable=False, default='local')     # local | microsoft
+    ms_id       = db.Column(db.String(64), index=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    people = db.relationship('Person', secondary=person_groups, back_populates='groups', lazy='dynamic')
+
+
+class Person(db.Model):
+    """شخص مستهدف بالنماذج (معلم، طالب، ولي أمر…)."""
+    __tablename__ = 'people'
+    id         = db.Column(db.Integer, primary_key=True)
+    name       = db.Column(db.String(200), nullable=False)
+    email      = db.Column(db.String(255), unique=True, index=True)
+    phone      = db.Column(db.String(40))
+    note       = db.Column(db.String(300))
+    active     = db.Column(db.Boolean, nullable=False, default=True)
+    source     = db.Column(db.String(20), nullable=False, default='local')
+    ms_id      = db.Column(db.String(64), index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    groups = db.relationship('Group', secondary=person_groups, back_populates='people')
+    invitations = db.relationship('Invitation', backref='person', lazy='dynamic')
+
+
+class Invitation(db.Model):
+    """دعوة شخص إلى نموذج: رابط شخصي، وحالة الإرسال والفتح والإجابة، والتذكيرات."""
+    __tablename__ = 'invitations'
+    __table_args__ = (db.UniqueConstraint('form_id', 'person_id', name='uq_invitation_form_person'),)
+    id           = db.Column(db.Integer, primary_key=True)
+    form_id      = db.Column(db.Integer, db.ForeignKey('forms.id'), nullable=False, index=True)
+    person_id    = db.Column(db.Integer, db.ForeignKey('people.id'), nullable=False, index=True)
+    token        = db.Column(db.String(40), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(16))
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    send_count   = db.Column(db.Integer, nullable=False, default=0)
+    last_sent_at = db.Column(db.DateTime)
+    send_failed  = db.Column(db.Boolean, nullable=False, default=False)
+    opened_at    = db.Column(db.DateTime)
+    responded_at = db.Column(db.DateTime)
+    response_id  = db.Column(db.Integer)
+
+    form = db.relationship('Form', backref=db.backref('invitations', lazy='dynamic'))
+
+    @property
+    def status(self):
+        if self.responded_at:
+            return 'responded'
+        if self.opened_at:
+            return 'opened'
+        if self.send_failed:
+            return 'failed'
+        return 'sent' if self.send_count else 'pending'
+
+
 class AppSetting(db.Model):
     __tablename__ = 'app_settings'
     key   = db.Column(db.String(100), primary_key=True)

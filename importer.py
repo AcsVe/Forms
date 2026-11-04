@@ -87,7 +87,7 @@ def _from_json(data):
             continue
         t = it.get('type') if it.get('type') in _types() else _alias(it.get('type') or it.get('kind') or 'text')
         if not t:
-            warnings.append(f'نوع غير معروف «{it.get("type")}» — حُوِّل إلى نص قصير.')
+            warnings.append(f'نوع السؤال «{it.get("type")}» غير معروف، فحُوِّل إلى نص قصير.')
             t = 'short_text'
         q = dict(it)
         q['type'] = t
@@ -357,7 +357,7 @@ def _from_script(text):
             kind = am.group(1)
             t = SCRIPT_TYPES.get(kind)
             if not t:
-                warnings.append(f'النوع add{kind}Item غير مدعوم — حُوِّل إلى نص قصير.')
+                warnings.append('في السكربت نوع سؤال غير مدعوم، فحُوِّل إلى نص قصير.')
                 t = 'short_text'
             last = {'type': t, 'title': ''}
             qs.append(last)

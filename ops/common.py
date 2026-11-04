@@ -27,7 +27,8 @@ def load_env():
     """يقرأ .env (لا يستبدل متغيراً موجوداً مسبقاً). الافتراضي: قاعدة SQLite في مجلد data داخل المشروع
     (خارج الكود — لا يلمسها update.bat)."""
     path = os.path.join(BASE, '.env')
-    if os.path.isfile(path):
+    # الاختبارات في المتصفح تضبط FORMS_NO_DOTENV=1 فلا تقرأ إعدادات المدرسة الحقيقية (حساب Microsoft) أبداً
+    if os.path.isfile(path) and os.environ.get('FORMS_NO_DOTENV') != '1':
         with open(path, encoding='utf-8-sig', errors='ignore') as fh:
             for raw in fh:
                 line = raw.strip()

@@ -17,7 +17,7 @@ window.LANG = {{ lang|tojson }};
 {% macro item(endpoint, eps, icon, ar, en, args={}) %}
   {% set on = ep in eps %}
   <a class="nav-item{{ ' active' if on }}" href="{{ url_for(endpoint, **args) }}"{% if on %} aria-current="page"{% endif %}>
-    <i class="fa-solid {{ icon }}" aria-hidden="true"></i><span>{{ L(ar, en) }}</span></a>
+    <i class="{{ icon if icon.startswith('fa-brands') else 'fa-solid ' ~ icon }}" aria-hidden="true"></i><span>{{ L(ar, en) }}</span></a>
 {% endmacro %}
 <body class="app{% block body_class %}{% endblock %}">
 {% if me %}
@@ -38,10 +38,14 @@ window.LANG = {{ lang|tojson }};
     <div class="nav-group">{{ L('الإجابات والتحليل', 'Responses & analysis') }}</div>
     {{ item('admin.all_responses', ['admin.all_responses'], 'fa-inbox', 'كل الإجابات', 'All responses') }}
     {{ item('admin.compare', ['admin.compare'], 'fa-code-compare', 'المقارنة بين النماذج', 'Compare forms') }}
+    <div class="nav-group">{{ L('المستهدفون', 'People') }}</div>
+    {{ item('admin.people', ['admin.people'], 'fa-address-book', 'الأشخاص والمجموعات', 'People and groups') }}
+    {{ item('admin.people_import', ['admin.people_import', 'admin.people_microsoft'], 'fa-file-import', 'استيراد المستهدفين', 'Import people') }}
     <div class="nav-group">{{ L('الإدارة', 'Administration') }}</div>
     {% if me.is_admin %}
     {{ item('admin.users', ['admin.users'], 'fa-users-gear', 'المستخدمون', 'Users') }}
     {{ item('admin.settings', ['admin.settings'], 'fa-gear', 'الإعدادات', 'Settings') }}
+    {{ item('admin.settings_microsoft', ['admin.settings_microsoft'], 'fa-brands fa-microsoft', 'حساب Microsoft', 'Microsoft account') }}
     {% endif %}
     {{ item('admin.help_page', ['admin.help_page'], 'fa-circle-question', 'دليل الاستخدام', 'User guide') }}
   </nav>

@@ -350,12 +350,12 @@
       extra.append(field(T('الأنواع المقبولة', 'Accepted types'), h('select', { onchange: (e) => { q.accept = e.target.value; dirty(); } },
         ...[['any', T('أي ملف', 'Any file')], ['image', T('صور', 'Images')], ['pdf', 'PDF'], ['doc', T('مستندات', 'Documents')], ['media', T('صوت وفيديو', 'Audio and video')]].map(([v, l]) => h('option', { value: v, selected: q.accept === v }, l)))));
     }
-    if (t === 'hidden') extra.append(field(T('اسم المتغيّر في الرابط', 'Parameter name in the link'), txt(q, 'param', 'ref', { ltr: true })));
+    if (t === 'hidden') extra.append(field(T('الاسم الذي يُكتب في الرابط', 'Name used in the link'), txt(q, 'param', 'ref', { ltr: true })));
     if (['short_text', 'long_text', 'email', 'phone', 'url'].includes(t)) {
       extra.append(field(T('نص داخل الحقل', 'Placeholder'), txt(q, 'placeholder', '')));
       const v = q.validation || {};
       extra.append(field(T('التحقق', 'Validation'), h('select', { onchange: (e) => { q.validation = e.target.value ? Object.assign({}, v, { kind: e.target.value }) : undefined; dirty(); renderList(); } },
-        h('option', { value: '' }, T('بلا', 'None')), h('option', { value: 'length', selected: v.kind === 'length' }, T('طول النص', 'Text length')), h('option', { value: 'regex', selected: v.kind === 'regex' }, T('صيغة (تعبير نمطي)', 'Pattern (regex)')))));
+        h('option', { value: '' }, T('بلا', 'None')), h('option', { value: 'length', selected: v.kind === 'length' }, T('طول النص', 'Text length')), h('option', { value: 'regex', selected: v.kind === 'regex' }, T('صيغة مخصّصة (للمتقدمين)', 'Custom pattern (advanced)')))));
       if (v.kind === 'length') {
         extra.append(field(T('أقل عدد أحرف', 'Min characters'), txt(v, 'min', '', { type: 'number' })));
         extra.append(field(T('أكثر عدد أحرف', 'Max characters'), txt(v, 'max', '', { type: 'number' })));
@@ -456,7 +456,7 @@
       h('div', { class: 'row' },
         h('label', { class: 'btn sm ghost shrink upl' }, icon('fa-image'), ' ', T('صورة', 'Image'),
           h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: async (e) => { const f = e.target.files[0]; if (!f) return; const u = await upload(f, 'image'); if (u) { m.image = u; renderList(); dirty(); } } })),
-        h('input', { type: 'url', dir: 'ltr', value: m.video || '', placeholder: T('رابط فيديو YouTube أو ملف MP4', 'YouTube or MP4 link'), oninput: (e) => { m.video = e.target.value; dirty(); } }),
+        h('input', { type: 'url', dir: 'ltr', value: m.video || '', placeholder: T('رابط فيديو من يوتيوب أو رابط ملف فيديو', 'A YouTube link or a video file link'), oninput: (e) => { m.video = e.target.value; dirty(); } }),
         m.image ? h('button', { type: 'button', class: 'sm danger shrink', onclick: () => { delete m.image; renderList(); dirty(); } }, T('إزالة الصورة', 'Remove image')) : null),
       prev);
     return box;

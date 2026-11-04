@@ -1,0 +1,61 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ L('حساب Microsoft للمدرسة', 'School Microsoft account') }}{% endblock %}
+{% block content %}
+<h1>{{ L('حساب Microsoft للمدرسة', 'School Microsoft account') }}</h1>
+<p class="lead">{{ L('بعد الربط يعمل: إرسال الدعوات والتذكيرات ورموز الدخول بالبريد، ودخول المستجيبين بحساب المدرسة، واستيراد الأشخاص والمجموعات من الدليل.', 'Once connected: invitations, reminders and sign-in codes are emailed, respondents can sign in with their school account, and people and groups can be imported from the directory.') }}</p>
+<div class="grid2">
+<form class="card" method="post" autocomplete="off">
+  <h2><i class="fa-solid fa-link"></i> {{ L('بيانات الربط', 'Connection details') }}
+    {% if st.complete %}<span class="badge ok">{{ L('مربوط', 'Connected') }}</span>{% else %}<span class="badge bad">{{ L('غير مكتمل', 'Incomplete') }}</span>{% endif %}</h2>
+  <input type="hidden" name="action" value="save">
+  <label for="t">{{ L('معرّف الجهة', 'Directory (tenant) ID') }}</label>
+  <input type="text" id="t" name="tenant" value="{{ st.tenant }}" dir="ltr" placeholder="00000000-0000-0000-0000-000000000000">
+  <label for="c">{{ L('معرّف التطبيق', 'Application (client) ID') }}</label>
+  <input type="text" id="c" name="client" value="{{ st.client }}" dir="ltr" placeholder="00000000-0000-0000-0000-000000000000">
+  <label for="sec">{{ L('السر', 'Client secret') }}</label>
+  <input type="password" id="sec" name="secret" dir="ltr" autocomplete="new-password"
+         placeholder="{{ L('محفوظ — اتركه فارغاً ليبقى كما هو', 'Saved — leave empty to keep it') if st.has_secret else L('الصق قيمة السر', 'Paste the secret value') }}">
+  <p class="note">{{ L('يُحفظ السر على الخادم ولا يُعرض مرة أخرى. عند انتهاء صلاحيته أنشئ سراً جديداً والصقه هنا.', 'The secret is stored on the server and never shown again. When it expires, create a new one and paste it here.') }}</p>
+  {% if st.has_secret %}<label class="check"><input type="checkbox" name="clear_secret" value="1"> {{ L('حذف السر المحفوظ', 'Delete the saved secret') }}</label>{% endif %}
+  <label for="snd">{{ L('بريد المرسل', 'Sender mailbox') }}</label>
+  <input type="email" id="snd" name="sender" value="{{ st.sender }}" dir="ltr" placeholder="forms@school.edu.jo">
+  <div class="row-actions" style="margin-top:12px"><button type="submit"><i class="fa-solid fa-floppy-disk"></i> {{ L('حفظ', 'Save') }}</button></div>
+</form>
+
+<div class="card" id="test">
+  <h2><i class="fa-solid fa-stethoscope"></i> {{ L('فحص الاتصال', 'Test connection') }}</h2>
+  <form method="post"><input type="hidden" name="action" value="test"><button type="submit" class="ghost"{{ ' disabled' if not st.complete }}><i class="fa-solid fa-plug-circle-check"></i> {{ L('فحص الاتصال الآن', 'Test the connection now') }}</button></form>
+  {% if checks %}<ul class="checks">{% for ok, ar, en in checks %}<li class="{{ 'ok' if ok else 'bad' }}"><i class="fa-solid {{ 'fa-circle-check' if ok else 'fa-circle-xmark' }}"></i> {{ L(ar, en) }}</li>{% endfor %}</ul>{% endif %}
+  <p class="note">{{ L('لتجربة البريد نفسه أرسل رسالة تجربة من صفحة «الإعدادات».', 'To try the mail itself, send a test message from the Settings page.') }}</p>
+</div>
+</div>
+
+<div class="card">
+  <h2><i class="fa-solid fa-list-ol"></i> {{ L('خطوات الإعداد في Azure (مرة واحدة)', 'Setup steps in Azure (once)') }}</h2>
+  {% macro t(x) %}<span class="en-term">{{ x }}</span>{% endmacro %}
+  {% set copybox %}<div class="copy-row"><input type="text" readonly dir="ltr" value="{{ redirect_uri }}" aria-label="{{ L('عنوان العودة', 'Return address') }}"><button type="button" data-copy="{{ redirect_uri }}"><i class="fa-solid fa-copy"></i> {{ L('نسخ', 'Copy') }}</button></div>{% endset %}
+  <ol class="steps">
+  {% if lang == 'en' %}
+    <li>Open {{ t('portal.azure.com') }} with the school admin account, then {{ t('App registrations') }} → {{ t('New registration') }}, and name it "Forms system".
+      <div class="muted small">Or use the same app the other school systems use for mail.</div></li>
+    <li>In {{ t('Authentication') }}, add the {{ t('Web') }} platform and paste this return address:{{ copybox }}</li>
+    <li>In {{ t('Certificates & secrets') }}, create a new secret and copy its {{ t('Value') }} into the "Client secret" box here.</li>
+    <li>In {{ t('API permissions') }} → {{ t('Microsoft Graph') }} add:
+      <ul><li>{{ t('Delegated') }}: {{ t('User.Read') }} (for respondents to sign in).</li>
+          <li>{{ t('Application') }}: {{ t('Mail.Send') }} {{ t('User.Read.All') }} {{ t('Group.Read.All') }} {{ t('GroupMember.Read.All') }} (for mail and import).</li></ul>
+      Then press {{ t('Grant admin consent') }}.</li>
+    <li>From the {{ t('Overview') }} page, copy the tenant ID and application ID into the boxes above, save, then press "Test connection".</li>
+  {% else %}
+    <li>افتح {{ t('portal.azure.com') }} بحساب مسؤول المدرسة، ثم {{ t('App registrations') }} ← {{ t('New registration') }}، وسمّه «نظام النماذج».
+      <div class="muted small">أو استخدم التطبيق نفسه الذي تستخدمه أنظمة المدرسة الأخرى للبريد.</div></li>
+    <li>في {{ t('Authentication') }} أضف منصة {{ t('Web') }} والصق عنوان العودة الآتي:{{ copybox }}</li>
+    <li>في {{ t('Certificates & secrets') }} أنشئ سراً جديداً، وانسخ قيمته {{ t('Value') }} إلى خانة «السر» هنا.</li>
+    <li>في {{ t('API permissions') }} ← {{ t('Microsoft Graph') }} أضف:
+      <ul><li>من نوع {{ t('Delegated') }}: {{ t('User.Read') }} لدخول المستجيبين.</li>
+          <li>من نوع {{ t('Application') }}: {{ t('Mail.Send') }} و{{ t('User.Read.All') }} و{{ t('Group.Read.All') }} و{{ t('GroupMember.Read.All') }} للبريد والاستيراد.</li></ul>
+      ثم اضغط {{ t('Grant admin consent') }}.</li>
+    <li>انسخ من صفحة {{ t('Overview') }} معرّف الجهة ومعرّف التطبيق إلى الخانات أعلاه، واحفظ، ثم اضغط «فحص الاتصال».</li>
+  {% endif %}
+  </ol>
+</div>
+{% endblock %}

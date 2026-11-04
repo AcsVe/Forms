@@ -1,0 +1,23 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import picker with context %}
+{% block title %}{{ L('الاستيراد من Microsoft', 'Import from Microsoft') }}{% endblock %}
+{% block content %}
+<h1>{{ L('الاستيراد من دليل Microsoft للمدرسة', 'Import from the school Microsoft directory') }}</h1>
+{% if error %}
+<div class="card"><p class="warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('تعذّرت قراءة المجموعات من الدليل. افتح «حساب Microsoft» في الإعدادات واضغط «فحص الاتصال» لمعرفة السبب.', 'The groups could not be read from the directory. Open "Microsoft account" in Settings and press "Test connection" to see why.') }}</p>
+  {% if me.is_admin %}<a class="btn" href="{{ url_for('admin.settings_microsoft') }}">{{ L('فتح الإعدادات', 'Open the settings') }}</a>{% endif %}</div>
+{% else %}
+<div class="card">
+  <h2>{{ L('المجموعات', 'Groups') }} <span class="count-pill">{{ groups|length }}</span></h2>
+  <p class="note">{{ L('اختر المجموعات ثم اضغط «استيراد المحدد»؛ تُستورد كل مجموعة مع أعضائها. المجموعات المستوردة سابقاً تُحدَّث.', 'Choose groups, then press "Import selected"; each group comes with its members. Groups imported before are updated.') }}</p>
+  {% set items = [] %}
+  {% for g in groups %}{% set _ = items.append({'id': g.id, 'label': g.displayName or '—', 'sub': (L('مستوردة', 'imported') if g.id in have else '') ~ ((' · ' ~ g.mail) if g.mail else ''), 'tags': ['have' if g.id in have else 'new']}) %}{% endfor %}
+  {{ picker('msgroups', url_for('admin.people_microsoft'), 'ids', items, 'استيراد المحدد', 'Import selected', [('new', L('لم تُستورد بعد', 'Not imported yet')), ('have', L('مستوردة سابقاً', 'Imported before'))]) }}
+</div>
+<form class="card" method="post" data-confirm="{{ L('استيراد كل الحسابات التي لها بريد من الدليل؟', 'Import every account with an email from the directory?') }}">
+  <h2>{{ L('كل الحسابات', 'Every account') }}</h2>
+  <p class="note">{{ L('يستورد كل حساب له بريد دون مجموعات، ثم يمكنك ترتيبهم في مجموعات.', 'Imports every account that has an email, without groups; you can then arrange them in groups.') }}</p>
+  <input type="hidden" name="action" value="users"><button type="submit" class="ghost"><i class="fa-solid fa-users"></i> {{ L('استيراد كل الحسابات', 'Import every account') }}</button>
+</form>
+{% endif %}
+{% endblock %}

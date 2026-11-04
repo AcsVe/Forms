@@ -1,0 +1,169 @@
+"""مراجعة المظهر في متصفح حقيقي: كل صفحة بالعربية والإنجليزية على الحاسوب والهاتف.
+
+يقيس: تباين النص مع خلفيته (4.5 على الأقل، و3 للنص الكبير)، والخط الأصغر من 13 بكسل، والتمرير الأفقي، والعناصر
+الخارجة عن حدود بطاقتها، وأخطاء JavaScript. ويحفظ صوراً مصغّرة في E2E_OUT.
+
+    venv\\Scripts\\python tests\\ui_audit.py
+"""
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.request
+
+from playwright.sync_api import sync_playwright
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.environ.get('E2E_OUT') or tempfile.mkdtemp(prefix='forms-ui-')
+os.makedirs(OUT, exist_ok=True)
+DB = os.path.join(OUT, 'ui.db')
+for ext in ('', '-wal', '-shm'):
+    if os.path.exists(DB + ext):
+        os.remove(DB + ext)
+PORT = 5097
+BASE = f'http://127.0.0.1:{PORT}'
+os.environ.update(FORMS_DB_PATH=DB, DATA_DIR=OUT, PYTHONUTF8='1', FORMS_NO_DOTENV='1')
+for _k in ('MS_TENANT_ID', 'MS_CLIENT_ID', 'MS_CLIENT_SECRET', 'MS_SENDER_EMAIL'):
+    os.environ.pop(_k, None)
+os.environ.pop('DATABASE_URL', None)
+sys.path.insert(0, ROOT)
+
+from app import create_app  # noqa: E402
+from models import Form, Group, Response, db  # noqa: E402
+
+app = create_app({'MAIL_BACKEND': 'memory', 'MAIL_OUTBOX': []})
+c = app.test_client()
+c.post('/admin/login', data={'username': 'admin', 'password': 'admin'})
+c.post('/admin/settings', data={'org_name_ar': 'مدرسة الأمل النموذجية', 'org_name_en': 'Al Amal Model School', 'accent': '#0C67EC'})
+with app.app_context():
+    tpl = Form.query.filter_by(is_template=True).order_by(Form.id).first().id
+r = c.post('/admin/forms/new', data={'template_id': tpl})
+FID = int(r.headers['Location'].split('/')[-2])
+c.post(f'/admin/api/forms/{FID}', json={'status': 'open', 'category': 'استبيانات'})
+with app.app_context():
+    f = db.session.get(Form, FID)
+    SLUG = f.slug
+    qs = f.questions
+c.post('/admin/people/import', data={'file': (io.BytesIO(('﻿الاسم,البريد,المجموعات,ملاحظة\n' + '\n'.join(
+    f'ولي أمر {i},parent{i}@school.jo,{"الصف السابع" if i % 2 else "الصف الثامن"},ولي أمر' for i in range(1, 9))).encode('utf-8')), 'p.csv')},
+    content_type='multipart/form-data')
+c.post(f'/admin/forms/{FID}/audience', data={'mode': 'all', 'send': '1'})
+for i in range(6):
+    tc = app.test_client()
+    tc.get(f'/f/{SLUG}')
+    lik = {r['id']: qs[1]['cols'][(i + j) % 5]['id'] for j, r in enumerate(qs[1]['rows'])}
+    tc.post(f'/f/{SLUG}/submit', data={'payload': json.dumps({'answers': {qs[0]['id']: qs[0]['choices'][i % 4]['id'], qs[1]['id']: lik,
+                                                                         qs[2]['id']: 3 + i % 3, qs[3]['id']: 5 + i, qs[4]['id']: 'تحسين المواصلات والمكتبة'}})})
+with app.app_context():
+    RID = Response.query.first().id
+    GID = Group.query.first().id
+    TIDS = [x.id for x in Form.query.filter_by(is_template=True)]
+
+srv = subprocess.Popen([sys.executable, os.path.join(ROOT, 'serve.py')], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       env=dict(os.environ, PORT=str(PORT), HOST='127.0.0.1', FORMS_MAIL_DEV='1'))
+for _ in range(60):
+    try:
+        if urllib.request.urlopen(BASE + '/healthz', timeout=1).read() == b'ok':
+            break
+    except Exception:
+        time.sleep(0.5)
+
+PAGES = ['/admin/', '/admin/forms', '/admin/templates', '/admin/forms/new', '/admin/forms/import', '/admin/responses',
+         f'/admin/compare?ids={FID}&ids={TIDS[1]}', '/admin/people', '/admin/people#groups', '/admin/people/import',
+         '/admin/settings', '/admin/settings/microsoft', '/admin/users', '/admin/account', '/admin/help',
+         f'/admin/forms/{FID}/edit', f'/admin/forms/{FID}/edit#settings', f'/admin/forms/{FID}/edit#design', f'/admin/forms/{FID}/edit#access',
+         f'/admin/forms/{FID}/edit#share', f'/admin/forms/{FID}/responses', f'/admin/forms/{FID}/analysis',
+         f'/admin/forms/{FID}/audience', f'/admin/responses/{RID}', f'/admin/forms/{FID}/qr/print']
+PUBLIC = [f'/f/{SLUG}', '/admin/login', '/admin/forgot']
+
+AUDIT_JS = r"""() => {
+  const lum = (c) => { const m = c.match(/[\d.]+/g); if (!m) return null; const [r, g, b] = m.slice(0, 3).map((v) => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return { l: 0.2126 * r + 0.7152 * g + 0.0722 * b, a: m.length > 3 ? Number(m[3]) : 1 }; };
+  const bgOf = (el) => { while (el) { const s = getComputedStyle(el); const b = s.backgroundColor; const L = lum(b);
+      if (s.backgroundImage !== 'none') return null; if (L && L.a > 0.9) return L.l; el = el.parentElement; } return 1; };
+  const out = { contrast: [], small: [], spill: [] };
+  const seen = new Set();
+  document.querySelectorAll('body *').forEach((el) => {
+    if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return;
+    const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
+    if (!own) return;
+    const s = getComputedStyle(el); if (s.visibility === 'hidden' || Number(s.opacity) < 0.3) return;
+    if (el.closest('canvas,svg,.chart-box,option,select')) return;
+    const fs = parseFloat(s.fontSize), fw = Number(s.fontWeight) || 400;
+    const txt = el.textContent.trim().slice(0, 40);
+    const fg = lum(s.color), bg = bgOf(el);
+    if (fg && bg !== null && !el.matches(':disabled') && !el.closest(':disabled,[disabled]')) {
+      const ratio = (Math.max(fg.l, bg) + 0.05) / (Math.min(fg.l, bg) + 0.05);
+      const large = fs >= 24 || (fs >= 18.6 && fw >= 700);
+      if (ratio < (large ? 3 : 4.5)) { const k = 'c' + txt; if (!seen.has(k)) { seen.add(k); out.contrast.push(`${ratio.toFixed(2)} «${txt}» ${el.tagName}.${el.className}`.slice(0, 140)); } }
+    }
+    if (fs < 13 && !el.closest('.dt-sort,.chip small,.words small,sup')) { const k = 's' + txt; if (!seen.has(k)) { seen.add(k); out.small.push(`${fs}px «${txt}» ${el.tagName}.${el.className}`.slice(0, 120)); } }
+  });
+  document.querySelectorAll('.card, .f-card, .kpi').forEach((card) => {
+    const cr = card.getBoundingClientRect(); if (!cr.width) return;
+    card.querySelectorAll('*').forEach((el) => {
+      if (el.closest('.dt-wrap,.matrix-wrap,.chart-box,.tabbar,.pick-list,.check-list,.txt-list,.imp-preview,.palette,details:not([open]),[hidden],.menu,dialog')) return;
+      const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+      if (r.left < cr.left - 2 || r.right > cr.right + 2) { const k = 'p' + el.tagName + el.className; if (!seen.has(k)) { seen.add(k); out.spill.push(`${el.tagName}.${el.className} «${(el.textContent || '').trim().slice(0, 30)}» in ${card.className}`.slice(0, 140)); } }
+    });
+  });
+  out.overflow = document.documentElement.scrollWidth - innerWidth;
+  return out;
+}"""
+
+report = []
+try:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(channel=os.environ.get('E2E_CHANNEL', 'chrome'))
+        for vp_name, vp in (('desktop', {'viewport': {'width': 1366, 'height': 900}}), ('phone', dict(p.devices['iPhone 13']))):
+            for lang in ('ar', 'en'):
+                ctx = browser.new_context(**vp)
+                page = ctx.new_page()
+                errs = []
+                page.on('pageerror', lambda e: errs.append(str(e)))
+                page.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
+                page.goto(BASE + f'/lang/{lang}?next=/admin/login')
+                for u in PUBLIC[1:]:
+                    page.goto(BASE + u, wait_until='networkidle')
+                    res = page.evaluate(AUDIT_JS)
+                    report.append((vp_name, lang, u, res, list(errs)))
+                    errs.clear()
+                page.goto(BASE + '/admin/login')
+                page.fill('#username', 'admin')
+                page.fill('#password', 'admin')
+                page.click('button[type=submit]')
+                page.wait_for_url('**/admin/')
+                for u in PAGES + PUBLIC[:1]:
+                    page.goto(BASE + u, wait_until='networkidle')
+                    page.wait_for_timeout(300)
+                    res = page.evaluate(AUDIT_JS)
+                    report.append((vp_name, lang, u, res, list(errs)))
+                    errs.clear()
+                    if os.environ.get('SHOTS') and lang == 'ar':
+                        name = f"{vp_name}-{u.strip('/').replace('/', '_').replace('?', '_').replace('#', '_')[:50] or 'root'}.jpg"
+                        try:
+                            page.screenshot(path=os.path.join(OUT, name), type='jpeg', quality=45, full_page=True)
+                        except Exception:  # صفحة أطول من حد لقطة المتصفح: لقطة الجزء الظاهر فقط
+                            page.screenshot(path=os.path.join(OUT, name), type='jpeg', quality=45)
+                ctx.close()
+        browser.close()
+finally:
+    srv.terminate()
+
+bad = 0
+for vp_name, lang, u, res, errs in report:
+    issues = []
+    if res['overflow'] > 2:
+        issues.append(f"horizontal overflow {res['overflow']}px")
+    issues += ['contrast ' + x for x in res['contrast']] + ['small ' + x for x in res['small']] + ['spill ' + x for x in res['spill']]
+    issues += ['JS ' + e for e in errs]
+    if issues:
+        bad += len(issues)
+        print(f'[{vp_name} {lang}] {u}')
+        for i in issues[:12]:
+            print('   ', i)
+print(f'\n{len(report)} page views, {bad} issue(s). Output: {OUT}')
+sys.exit(1 if bad else 0)

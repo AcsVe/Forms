@@ -63,10 +63,9 @@
         <dt>{{ L('الجهاز', 'Device') }}</dt><dd>{{ r.device|device }}</dd>
         <dt>{{ L('المتصفح', 'Browser') }}</dt><dd>{{ r.browser }} {{ (r.meta or {}).get('browser_version', '') }}</dd>
         <dt>{{ L('نظام التشغيل', 'Operating system') }}</dt><dd>{{ r.os }}</dd>
-        <dt>{{ L('عنوان IP', 'IP address') }}</dt><dd class="mono">{{ r.ip }}</dd>
-        {% for k, ar, en in [('screen', 'الشاشة', 'Screen'), ('viewport', 'نافذة المتصفح', 'Window'), ('tz', 'المنطقة الزمنية', 'Time zone'), ('lang', 'لغة المتصفح', 'Browser language'), ('platform', 'المنصة', 'Platform'), ('referrer', 'جاء من', 'Came from'), ('source', 'المصدر', 'Source')] if (r.meta or {}).get(k) %}
+        <dt>{{ L('عنوان الشبكة', 'Network address') }}</dt><dd class="mono">{{ r.ip }}</dd>
+        {% for k, ar, en in [('screen', 'الشاشة', 'Screen'), ('viewport', 'نافذة المتصفح', 'Window'), ('tz', 'المنطقة الزمنية', 'Time zone'), ('lang', 'لغة المتصفح', 'Browser language'), ('referrer', 'جاء من', 'Came from'), ('source', 'المصدر', 'Source')] if (r.meta or {}).get(k) %}
         <dt>{{ L(ar, en) }}</dt><dd dir="ltr">{{ r.meta[k] }}</dd>{% endfor %}
-        <dt>User-Agent</dt><dd class="mono small ua">{{ r.user_agent }}</dd>
       </dl>
       {% if r.flagged %}<p class="badge bad">{{ L('تكرار محتمل: إجابة سابقة من الجهاز نفسه خلال 24 ساعة.', 'Possible duplicate: an earlier response from the same device within 24 hours.') }}</p>{% endif %}
     </div>

@@ -18,7 +18,7 @@
   <th data-filter="select">{{ L('النموذج', 'Form') }}</th><th data-filter="text">{{ L('الوقت', 'Time') }}</th>
   <th data-filter="text">{{ L('المستجيب', 'Respondent') }}</th><th data-filter="select">{{ L('الجهاز', 'Device') }}</th>
   <th data-filter="select">{{ L('المتصفح', 'Browser') }}</th><th data-filter="select">{{ L('النظام', 'System') }}</th>
-  <th data-filter="text">IP</th><th data-sort="num">{{ L('المدة', 'Time taken') }}</th></tr></thead><tbody>
+  <th data-filter="text">{{ L('عنوان الشبكة', 'Network address') }}</th><th data-sort="num">{{ L('المدة', 'Time taken') }}</th></tr></thead><tbody>
 {% for r in rows %}<tr data-row>
   <td class="chk">{{ bulk_item('responses', r.id) }}</td>
   <td data-value="{{ r.id }}"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.id }}</a></td>

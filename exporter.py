@@ -47,7 +47,7 @@ def columns(form, lang='ar'):
              (L('الجهاز', 'Device'), lambda r: r.device or ''),
              (L('المتصفح', 'Browser'), lambda r: r.browser or ''),
              (L('النظام', 'OS'), lambda r: r.os or ''),
-             (L('عنوان IP', 'IP address'), lambda r: r.ip or ''),
+             (L('عنوان الشبكة', 'Network address'), lambda r: r.ip or ''),
              (L('اللغة', 'Language'), lambda r: r.lang or ''),
              (L('الشاشة', 'Screen'), lambda r: (r.meta or {}).get('screen', '')),
              (L('المنطقة الزمنية', 'Time zone'), lambda r: (r.meta or {}).get('tz', '')),
