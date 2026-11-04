@@ -1,0 +1,9 @@
+{% extends 'public/_base.html' %}
+{% block title %}{{ code }}{% endblock %}
+{% block body %}
+<div class="f-card done-card">
+  <div class="done-ico closed"><i class="fa-solid fa-circle-exclamation"></i></div>
+  <h1>{{ code }}</h1>
+  <p class="done-msg">{{ msg }}</p>
+</div>
+{% endblock %}

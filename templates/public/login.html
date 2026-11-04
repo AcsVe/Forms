@@ -1,0 +1,30 @@
+{% extends 'public/_base.html' %}
+{% block body %}
+<div class="f-card gate">
+  {% if f.s('header_image') %}<img class="f-banner" src="{{ f.s('header_image') }}" alt="">{% endif %}
+  <div class="f-head-in">
+  <h1>{{ f.title_for(lang) }}</h1>
+  <p class="muted"><i class="fa-solid fa-envelope-circle-check"></i> {{ L('هذا النموذج يتطلب التحقق من بريدك الإلكتروني أولاً.', 'This form needs you to confirm your email first.') }}</p>
+  {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="f-alert {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}
+  {% if dev_code %}<div class="f-alert ok">{{ L('وضع التجربة (البريد غير مُعدّ): رمز الدخول هو', 'Test mode (mail not set up): the code is') }} <b dir="ltr" id="devCode">{{ dev_code }}</b></div>{% endif %}
+  {% if step == 'code' %}
+  <form method="post" action="{{ request.full_path }}" class="gate-form">
+    <input type="hidden" name="action" value="verify"><input type="hidden" name="email" value="{{ email }}">
+    <label for="code">{{ L('رمز التحقق المرسل إلى', 'Code sent to') }} <span dir="ltr">{{ email }}</span></label>
+    <input type="text" id="code" name="code" class="f-in code-in" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required autofocus dir="ltr">
+    <button type="submit" class="f-btn"><i class="fa-solid fa-check"></i> {{ L('تحقق ومتابعة', 'Verify and continue') }}</button>
+  </form>
+  <form method="post" action="{{ request.full_path }}" class="inline-form"><input type="hidden" name="action" value="send"><input type="hidden" name="email" value="{{ email }}">
+    <button type="submit" class="linkish">{{ L('أرسل رمزاً جديداً', 'Send a new code') }}</button> · <a href="{{ request.full_path }}" class="linkish">{{ L('بريد آخر', 'Another email') }}</a></form>
+  {% else %}
+  <form method="post" action="{{ request.full_path }}" class="gate-form">
+    <input type="hidden" name="action" value="send">
+    <label for="email">{{ L('بريدك الإلكتروني', 'Your email') }}</label>
+    <input type="email" id="email" name="email" class="f-in" required autocomplete="email" dir="ltr" value="{{ email }}" autofocus>
+    {% if f.s('email_domains') %}<p class="hint">{{ L('المسموح:', 'Allowed:') }} <span dir="ltr">{{ f.s('email_domains') }}</span></p>{% endif %}
+    <button type="submit" class="f-btn"><i class="fa-solid fa-paper-plane"></i> {{ L('أرسل رمز التحقق', 'Send the code') }}</button>
+  </form>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

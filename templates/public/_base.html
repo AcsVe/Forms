@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+{% set s = (f.settings if f else {}) or {} %}
+{% set acc = s.get('accent') if s.get('accent') else '#0C67EC' %}
+<meta name="theme-color" content="{{ acc }}">
+<meta name="robots" content="noindex">
+<link rel="icon" href="{{ url_for('static', filename='brand/system.svg') }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800{% if s.get('font') == 'Cairo' %}&family=Cairo:wght@400;600;700{% elif s.get('font') == 'Noto Kufi Arabic' %}&family=Noto+Kufi+Arabic:wght@400;600;700{% elif s.get('font') == 'IBM Plex Sans Arabic' %}&family=IBM+Plex+Sans+Arabic:wght@400;500;700{% endif %}&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="{{ asset('css/form.css') }}">
+<style>:root{--acc:{{ acc }};--bg:{{ s.get('bg_color') or '#eef3fb' }};--ov:{{ ((s.get('bg_overlay') if s.get('bg_overlay') is not none else 35) / 100) }};{% if s.get('font') %}--font:'{{ s.get('font') }}';{% endif %}}</style>
+<title>{% block title %}{{ f.title_for(lang) if f else '' }}{% endblock %}</title>
+</head>
+<body class="pub{{ ' embed' if embed }}{{ ' glass' if s.get('card_style') == 'glass' }}{{ ' flat' if s.get('card_style') == 'flat' }}{{ ' has-bg' if s.get('bg_image') or s.get('bg_video') }}">
+{% if not embed %}
+<div class="bg-layer" aria-hidden="true">
+  {% if s.get('bg_image') %}<div class="bg-img" style="background-image:url('{{ s.get('bg_image')|e }}')"></div>{% endif %}
+  {% if s.get('bg_video') %}<video class="bg-vid" src="{{ s.get('bg_video') }}" autoplay muted loop playsinline preload="auto"{% if s.get('bg_image') %} poster="{{ s.get('bg_image') }}"{% endif %}></video>{% endif %}
+  {% if s.get('bg_image') or s.get('bg_video') %}<div class="bg-ov"></div>{% endif %}
+</div>
+{% endif %}
+<div class="pub-top">
+  {% if f and s.get('bilingual') %}
+  <a class="pill" href="?{{ dict(request.args, lang=('ar' if lang == 'en' else 'en'))|urlencode }}" hreflang="{{ 'ar' if lang == 'en' else 'en' }}" lang="{{ 'ar' if lang == 'en' else 'en' }}"><i class="fa-solid fa-globe"></i> {{ 'العربية' if lang == 'en' else 'English' }}</a>
+  {% endif %}
+  {% if f and s.get('bg_music') and not embed %}
+  <button type="button" class="pill" id="musicBtn" aria-pressed="false" data-src="{{ s.get('bg_music') }}" data-vol="{{ s.get('music_volume') or 40 }}">
+    <i class="fa-solid fa-music"></i> <span>{{ L('تشغيل الموسيقى', 'Play music') }}</span></button>
+  {% endif %}
+</div>
+<main class="pub-main">
+{% block body %}{% endblock %}
+</main>
+{% if not embed %}<footer class="pub-foot">{{ L('نظام النماذج والاستبيانات', 'Forms and surveys system') }}{% if org_name %} — {{ org_name }}{% endif %}</footer>{% endif %}
+<script>
+(function () {
+  const b = document.getElementById('musicBtn');
+  if (!b) return;
+  const a = new Audio(b.dataset.src); a.loop = true; a.volume = Math.min(1, (Number(b.dataset.vol) || 40) / 100);
+  const lab = b.querySelector('span');
+  b.addEventListener('click', () => {
+    if (a.paused) { a.play().then(() => { b.setAttribute('aria-pressed', 'true'); lab.textContent = {{ L('إيقاف الموسيقى', 'Stop music')|tojson }}; b.querySelector('i').className = 'fa-solid fa-volume-high'; }).catch(() => {}); }
+    else { a.pause(); b.setAttribute('aria-pressed', 'false'); lab.textContent = {{ L('تشغيل الموسيقى', 'Play music')|tojson }}; b.querySelector('i').className = 'fa-solid fa-music'; }
+  });
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

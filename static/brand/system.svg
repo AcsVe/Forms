@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Forms">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3D8EF5"/><stop offset=".55" stop-color="#0C67EC"/><stop offset="1" stop-color="#0847B0"/></linearGradient></defs>
+  <rect width="120" height="120" rx="28" fill="url(#g)"/>
+  <rect x="31" y="24" width="58" height="74" rx="9" fill="#fff"/>
+  <rect x="47" y="18" width="26" height="13" rx="5" fill="#cfe0fb" stroke="#fff" stroke-width="3"/>
+  <circle cx="44" cy="48" r="5" fill="none" stroke="#0C67EC" stroke-width="3.5"/>
+  <path d="M41.5 48l2 2 3.5-4" fill="none" stroke="#0C67EC" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="54" y="45" width="26" height="6" rx="3" fill="#0C67EC" opacity=".85"/>
+  <circle cx="44" cy="64" r="5" fill="none" stroke="#0C67EC" stroke-width="3.5"/>
+  <rect x="54" y="61" width="22" height="6" rx="3" fill="#0C67EC" opacity=".55"/>
+  <circle cx="44" cy="80" r="5" fill="none" stroke="#0C67EC" stroke-width="3.5"/>
+  <rect x="54" y="77" width="18" height="6" rx="3" fill="#0C67EC" opacity=".35"/>
+</svg>

@@ -1,0 +1,27 @@
+{# شريط التصفية المشترك: التاريخ والجهاز والمتصفح والإجابات التجريبية #}
+<form class="filter-bar card" method="get">
+  {% for k in ['a', 'b'] if args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ args.get(k) }}">{% endfor %}
+  <div><label for="ff">{{ L('من تاريخ', 'From') }}</label><input type="date" id="ff" name="from" value="{{ args.get('from', '') }}"></div>
+  <div><label for="ft">{{ L('إلى تاريخ', 'To') }}</label><input type="date" id="ft" name="to" value="{{ args.get('to', '') }}"></div>
+  <div><label for="fd">{{ L('الجهاز', 'Device') }}</label><select id="fd" name="device"><option value="">{{ L('الكل', 'All') }}</option>
+    {% for k, ar, en in [('mobile', 'هاتف', 'Phone'), ('tablet', 'جهاز لوحي', 'Tablet'), ('desktop', 'حاسوب', 'Computer'), ('bot', 'برنامج آلي', 'Bot')] %}<option value="{{ k }}"{{ ' selected' if args.get('device') == k }}>{{ L(ar, en) }}</option>{% endfor %}</select></div>
+  {% if seg_questions %}
+  <div><label for="sq">{{ L('شريحة: السؤال', 'Segment: question') }}</label><select id="sq" name="seg_q"><option value="">{{ L('— بلا —', '— none —') }}</option>
+    {% for q in seg_questions %}<option value="{{ q.id }}"{{ ' selected' if args.get('seg_q') == q.id }}>{{ qtitle(q, lang)[:50] }}</option>{% endfor %}</select></div>
+  <div><label for="sv">{{ L('القيمة', 'Value') }}</label><select id="sv" name="seg_v" data-cats="{{ seg_cats|tojson|forceescape }}"><option value="">{{ L('— بلا —', '— none —') }}</option></select></div>
+  {% endif %}
+  <label class="check"><input type="checkbox" name="test" value="1"{{ ' checked' if args.get('test') == '1' }}> {{ L('مع إجابات المعاينة', 'Include preview responses') }}</label>
+  <div class="fb-actions"><button type="submit" class="sm"><i class="fa-solid fa-filter"></i> {{ L('تطبيق', 'Apply') }}</button>
+    <a class="btn sm ghost" href="{{ request.path }}">{{ L('مسح', 'Clear') }}</a></div>
+</form>
+{% if seg_questions %}<script>
+(function () {
+  const sq = document.getElementById('sq'), sv = document.getElementById('sv');
+  const cats = JSON.parse(sv.dataset.cats), cur = {{ args.get('seg_v', '')|tojson }};
+  function fill() {
+    sv.length = 1;
+    (cats[sq.value] || []).forEach(([k, l]) => sv.add(new Option(l, k, false, k === cur)));
+  }
+  sq.addEventListener('change', fill); fill();
+})();
+</script>{% endif %}

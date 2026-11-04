@@ -1,0 +1,246 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_macros.html' import form_tabs with context %}
+{% block title %}{{ f.title }}{% endblock %}
+{% block body_class %} builder-page{% endblock %}
+{% macro tog(key, ar, en, note_ar='', note_en='') -%}
+<label class="switch"><input type="checkbox" data-s="{{ key }}"><span class="sl"></span><span>{{ L(ar, en) }}</span></label>
+{% if note_ar %}<p class="note">{{ L(note_ar, note_en) }}</p>{% endif %}
+{%- endmacro %}
+{% macro media_field(key, kind, ar, en, accept) -%}
+<div class="media-field" data-media="{{ key }}" data-kind="{{ kind }}">
+  <label>{{ L(ar, en) }}</label>
+  <div class="row">
+    <input type="url" data-s="{{ key }}" placeholder="{{ L('رابط مباشر أو ارفع ملفاً', 'A direct link, or upload a file') }}" dir="ltr">
+    <label class="btn ghost sm shrink upl"><i class="fa-solid fa-upload"></i> {{ L('رفع', 'Upload') }}<input type="file" accept="{{ accept }}" hidden></label>
+    <button type="button" class="sm danger shrink" data-clear="{{ key }}" title="{{ L('إزالة', 'Remove') }}" aria-label="{{ L('إزالة', 'Remove') }}"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="media-prev"></div>
+</div>
+{%- endmacro %}
+{% block content %}
+<div class="b-head">
+  <div class="b-title">
+    <input type="text" class="title-input" data-f="title" maxlength="300" aria-label="{{ L('عنوان النموذج', 'Form title') }}">
+    <span class="save-state" id="saveState" aria-live="polite"></span>
+  </div>
+  <div class="b-actions">
+    <select id="statusSel" aria-label="{{ L('حالة النموذج', 'Form status') }}" class="status-sel">
+      <option value="draft">{{ L('مسودة (لا يستقبل إجابات)', 'Draft (not accepting)') }}</option>
+      <option value="open">{{ L('مفتوح لاستقبال الإجابات', 'Open for responses') }}</option>
+      <option value="closed">{{ L('مغلق', 'Closed') }}</option>
+    </select>
+    <a class="btn ghost" href="{{ url_for('public.fill', slug=f.slug, preview=1) }}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> {{ L('معاينة', 'Preview') }}</a>
+    <a class="btn" href="#share"><i class="fa-solid fa-share-nodes"></i> {{ L('مشاركة', 'Share') }}</a>
+    <details class="user-menu more-menu"><summary class="btn ghost" aria-label="{{ L('المزيد', 'More') }}"><i class="fa-solid fa-ellipsis"></i></summary>
+      <div class="menu">
+        <form method="post" action="{{ url_for('admin.form_duplicate', fid=f.id) }}"><button class="menu-btn" type="submit"><i class="fa-solid fa-copy"></i> {{ L('نسخ النموذج', 'Duplicate the form') }}</button></form>
+        <form method="post" action="{{ url_for('admin.form_save_template', fid=f.id) }}"><button class="menu-btn" type="submit"><i class="fa-solid fa-swatchbook"></i> {{ L('حفظ قالباً', 'Save as template') }}</button></form>
+        <form method="post" action="{{ url_for('admin.form_subform', fid=f.id) }}"><button class="menu-btn" type="submit"><i class="fa-solid fa-diagram-project"></i> {{ L('إنشاء نموذج فرعي', 'Create a sub-form') }}</button></form>
+        <a href="{{ url_for('admin.export', fid=f.id, fmt='form') }}"><i class="fa-solid fa-file-code"></i> {{ L('تصدير بنية النموذج (JSON)', 'Export form structure (JSON)') }}</a>
+        <form method="post" action="{{ url_for('admin.form_delete', fid=f.id) }}" data-confirm="{{ L('حذف النموذج نهائياً؟', 'Delete this form permanently?') }}"><button class="menu-btn out" type="submit"><i class="fa-solid fa-trash"></i> {{ L('حذف النموذج', 'Delete the form') }}</button></form>
+      </div></details>
+  </div>
+</div>
+{% if f.is_template %}<div class="alert warning">{{ L('هذا قالب. التعديلات هنا تغيّر القالب نفسه، ولا يستقبل إجابات. لاستخدامه أنشئ منه نموذجاً من «القوالب».', 'This is a template. Changes here edit the template itself, and it does not accept responses. To use it, create a form from it in Templates.') }}</div>
+{% else %}{{ form_tabs(f, 'edit') }}{% endif %}
+
+<nav class="tabbar" data-tabs>
+  <a data-tab="questions" href="#questions"><i class="fa-solid fa-list-check"></i> {{ L('الأسئلة', 'Questions') }}</a>
+  <a data-tab="settings" href="#settings"><i class="fa-solid fa-sliders"></i> {{ L('الإعدادات', 'Settings') }}</a>
+  <a data-tab="design" href="#design"><i class="fa-solid fa-palette"></i> {{ L('المظهر والخلفية', 'Look & background') }}</a>
+  <a data-tab="access" href="#access"><i class="fa-solid fa-user-lock"></i> {{ L('الدخول والمستجيب', 'Access & respondent') }}</a>
+  <a data-tab="quiz" href="#quiz"><i class="fa-solid fa-graduation-cap"></i> {{ L('الاختبار', 'Quiz') }}</a>
+  <a data-tab="share" href="#share"><i class="fa-solid fa-share-nodes"></i> {{ L('المشاركة', 'Share') }}</a>
+  <a data-tab="subforms" href="#subforms"><i class="fa-solid fa-diagram-project"></i> {{ L('النماذج الفرعية', 'Sub-forms') }} <span class="count">{{ f.children.count() }}</span></a>
+</nav>
+
+<section class="tabpane" data-pane="questions">
+  <div class="b-layout">
+    <aside class="palette" aria-label="{{ L('أنواع الأسئلة', 'Question types') }}">
+      <div class="pal-head">{{ L('أضف سؤالاً', 'Add a question') }}</div>
+      {% for g, gar, gen in GROUPS %}
+      <div class="pal-group">{{ L(gar, gen) }}</div>
+      <div class="pal-items">
+      {% for t, v in TYPES.items() if v[2] == g %}
+        <button type="button" class="pal-btn" data-add="{{ t }}"><i class="fa-solid {{ v[3] }}"></i><span>{{ L(v[0], v[1]) }}</span></button>
+      {% endfor %}
+      </div>
+      {% endfor %}
+    </aside>
+    <div class="b-main">
+      <div class="card form-head-card" style="--k:{{ f.s('accent') or accent }}">
+        <label for="fdesc">{{ L('وصف النموذج', 'Form description') }}</label>
+        <textarea id="fdesc" data-f="description" rows="2" placeholder="{{ L('يظهر تحت العنوان (اختياري)', 'Shown under the title (optional)') }}"></textarea>
+        <div class="bi-only"><label for="ften">{{ L('العنوان بالإنجليزية', 'Title in English') }}</label><input type="text" id="ften" data-f="title_en" dir="ltr" maxlength="300"></div>
+      </div>
+      <div id="qlist" class="qlist"></div>
+      <div class="add-bar">
+        <button type="button" id="addBtn" class="ghost"><i class="fa-solid fa-plus"></i> {{ L('سؤال جديد', 'New question') }}</button>
+        <button type="button" class="ghost" data-add="section"><i class="fa-solid fa-layer-group"></i> {{ L('قسم جديد', 'New section') }}</button>
+        <a class="btn ghost" href="{{ url_for('admin.form_import') }}"><i class="fa-solid fa-paste"></i> {{ L('لصق أسئلة', 'Paste questions') }}</a>
+      </div>
+      <dialog id="typeDlg" class="type-dlg"><form method="dialog"><h2>{{ L('اختر نوع السؤال', 'Choose the question type') }}</h2><div class="pal-items" id="dlgItems"></div>
+        <button class="ghost" value="cancel">{{ L('إلغاء', 'Cancel') }}</button></form></dialog>
+    </div>
+  </div>
+</section>
+
+<section class="tabpane" data-pane="settings" hidden>
+  <div class="grid2">
+    <div class="card"><h2>{{ L('عام', 'General') }}</h2>
+      <div class="form-grid">
+        <div><label>{{ L('لغة النموذج', 'Form language') }}</label>
+          <select data-s="lang"><option value="ar">{{ L('العربية (من اليمين إلى اليسار)', 'Arabic (right to left)') }}</option><option value="en">{{ L('الإنجليزية (من اليسار إلى اليمين)', 'English (left to right)') }}</option></select></div>
+        <div><label>{{ L('التصنيف', 'Category') }}</label><input type="text" data-f="category" list="catList" maxlength="120">
+          <datalist id="catList">{% for c in cats %}<option value="{{ c }}">{% endfor %}</datalist></div>
+        <div><label>{{ L('النموذج الأم (للنماذج الفرعية)', 'Parent form (for sub-forms)') }}</label>
+          <select data-f="parent_id"><option value="">{{ L('— لا يوجد —', '— none —') }}</option>{% for o in others %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></div>
+      </div>
+      {{ tog('bilingual', 'نموذج بلغتين (عربي وإنجليزي) مع زر تبديل اللغة للمستجيب', 'Two languages (Arabic and English) with a language switch for respondents', 'تظهر حقول الإنجليزية لكل سؤال وخيار.', 'English fields appear for every question and option.') }}
+      {{ tog('progress', 'شريط التقدم', 'Progress bar') }}
+      {{ tog('question_numbers', 'ترقيم الأسئلة', 'Number the questions') }}
+      {{ tog('shuffle', 'ترتيب عشوائي للأسئلة داخل كل صفحة', 'Shuffle the questions on each page') }}
+      {{ tog('autosave', 'حفظ المسودة في جهاز المستجيب حتى يعود ويكمل', 'Keep a draft on the respondent\'s device so they can come back and finish') }}
+      <div class="form-grid" style="margin-top:10px">
+        <div><label>{{ L('مهلة الإجابة بالدقائق (0 = بلا مهلة)', 'Time limit in minutes (0 = none)') }}</label><input type="number" min="0" max="600" data-s="time_limit"></div>
+      </div>
+    </div>
+    <div class="card"><h2>{{ L('الفتح والإغلاق', 'Opening and closing') }}</h2>
+      <div class="form-grid">
+        <div><label>{{ L('يفتح في (توقيت عمّان)', 'Opens at (Amman time)') }}</label><input type="datetime-local" data-s="open_at"></div>
+        <div><label>{{ L('يُغلق في (توقيت عمّان)', 'Closes at (Amman time)') }}</label><input type="datetime-local" data-s="close_at"></div>
+        <div><label>{{ L('الحد الأعلى لعدد الإجابات', 'Maximum number of responses') }}</label><input type="number" min="0" data-s="max_responses" placeholder="{{ L('بلا حد', 'No limit') }}"></div>
+      </div>
+      <label>{{ L('رسالة النموذج المغلق', 'Message when closed') }}</label>
+      <input type="text" data-s="closed_message" maxlength="500" placeholder="{{ L('هذا النموذج لا يستقبل إجابات حالياً.', 'This form is not accepting responses.') }}">
+    </div>
+    <div class="card"><h2>{{ L('بعد الإرسال', 'After submitting') }}</h2>
+      <label>{{ L('رسالة الشكر', 'Thank-you message') }}</label>
+      <textarea data-s="confirmation" rows="2" placeholder="{{ L('شكراً لك، وصلت إجابتك.', 'Thank you, your response was received.') }}"></textarea>
+      <div class="bi-only"><label>{{ L('رسالة الشكر بالإنجليزية', 'Thank-you message in English') }}</label><textarea data-s="confirmation_en" rows="2" dir="ltr"></textarea></div>
+      <label style="margin-top:8px">{{ L('تحويل إلى رابط بعد الإرسال (اختياري)', 'Redirect to a link after submitting (optional)') }}</label>
+      <input type="url" data-s="redirect_url" dir="ltr" placeholder="https://">
+      {{ tog('allow_another', 'زر «إرسال إجابة أخرى»', '"Submit another response" button') }}
+      {{ tog('show_subforms', 'عرض النماذج الفرعية المفتوحة في صفحة الشكر', 'Show the open sub-forms on the thank-you page') }}
+    </div>
+    <div class="card"><h2>{{ L('الإشعارات', 'Notifications') }}</h2>
+      <label>{{ L('أرسل كل إجابة جديدة إلى (بريد أو أكثر)', 'Email every new response to (one or more addresses)') }}</label>
+      <input type="text" data-s="notify_emails" dir="ltr" placeholder="name@school.edu.jo, ...">
+      {% if not mail_ready %}<p class="note warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('البريد غير مُعدّ في النظام؛ لن تُرسل الإشعارات حتى يُعدّ (الإعدادات).', 'Mail is not set up; notifications will not be sent until it is (Settings).') }}</p>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="tabpane" data-pane="design" hidden>
+  <div class="grid2">
+    <div class="card"><h2>{{ L('الألوان والخط', 'Colours and font') }}</h2>
+      <div class="form-grid">
+        <div><label>{{ L('اللون الرئيسي', 'Main colour') }}</label><input type="color" data-s="accent"></div>
+        <div><label>{{ L('لون الخلفية', 'Background colour') }}</label><input type="color" data-s="bg_color"></div>
+        <div><label>{{ L('الخط', 'Font') }}</label><select data-s="font"><option value="">Tajawal</option><option value="Cairo">Cairo</option><option value="Noto Kufi Arabic">Noto Kufi Arabic</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option></select></div>
+        <div><label>{{ L('شكل البطاقات', 'Card style') }}</label><select data-s="card_style"><option value="">{{ L('بيضاء', 'White') }}</option><option value="glass">{{ L('زجاجية شفافة', 'Frosted glass') }}</option><option value="flat">{{ L('بلا ظل', 'Flat') }}</option></select></div>
+      </div>
+      {{ media_field('header_image', 'image', 'صورة الترويسة (أعلى النموذج)', 'Header image (top of the form)', 'image/*') }}
+    </div>
+    <div class="card"><h2>{{ L('الخلفية والموسيقى', 'Background and music') }}</h2>
+      {{ media_field('bg_image', 'image', 'صورة الخلفية', 'Background image', 'image/*') }}
+      {{ media_field('bg_video', 'video', 'فيديو الخلفية (MP4 أو WebM، يعمل صامتاً ومتكرراً)', 'Background video (MP4 or WebM, muted and looping)', 'video/*') }}
+      <div><label>{{ L('تعتيم الخلفية', 'Background dimming') }} <output id="ovOut"></output>%</label><input type="range" min="0" max="90" step="5" data-s="bg_overlay"></div>
+      {{ media_field('bg_music', 'audio', 'موسيقى الخلفية (يشغّلها المستجيب بزر)', 'Background music (the respondent starts it with a button)', 'audio/*') }}
+      <div><label>{{ L('مستوى صوت الموسيقى', 'Music volume') }}</label><input type="range" min="5" max="100" step="5" data-s="music_volume"></div>
+      <p class="note">{{ L('حجم الملف: الصور حتى 8 ميغابايت، والصوت حتى 20، والفيديو حتى 50. الملفات تُحفظ داخل النظام فتشملها النسخ الاحتياطية.', 'File size: images up to 8 MB, audio up to 20, video up to 50. Files are stored inside the system, so backups include them.') }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="tabpane" data-pane="access" hidden>
+  <div class="grid2">
+    <div class="card"><h2>{{ L('من يستطيع الإجابة', 'Who can answer') }}</h2>
+      <p class="note">{{ L('افتراضياً يجيب أي شخص معه الرابط دون دخول، ويُسجَّل الجهاز والمتصفح ونظام التشغيل وعنوان IP على الخادم.', 'By default anyone with the link can answer without signing in; the device, browser, system and IP address are recorded on the server.') }}</p>
+      {{ tog('require_email', 'يتطلب الدخول بالبريد الإلكتروني (رمز تحقق يصل إلى البريد)', 'Requires email sign-in (a code sent to the email)') }}
+      {% if not mail_ready %}<p class="note warn-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ L('البريد غير مُعدّ في النظام، فلن يصل رمز الدخول. أعدّه من الإعدادات قبل تفعيل هذا الخيار.', 'Mail is not set up, so no sign-in code can be sent. Set it up in Settings before turning this on.') }}</p>{% endif %}
+      <label>{{ L('النطاقات المسموح بها فقط (اختياري)', 'Allowed email domains only (optional)') }}</label>
+      <input type="text" data-s="email_domains" dir="ltr" placeholder="school.edu.jo, moe.gov.jo">
+      {{ tog('one_per_email', 'إجابة واحدة لكل بريد', 'One response per email') }}
+      {{ tog('send_copy', 'إرسال نسخة من الإجابات إلى بريد المستجيب', 'Email a copy of the answers to the respondent') }}
+      {{ tog('one_per_device', 'إجابة واحدة لكل جهاز (بلا دخول)', 'One response per device (without sign-in)') }}
+      <p class="note">{{ L('الإجابات المكررة من الجهاز نفسه خلال 24 ساعة تُعلَّم «تكرار محتمل» في كل الأحوال.', 'Repeated responses from the same device within 24 hours are always marked "possible duplicate".') }}</p>
+    </div>
+    <div class="card"><h2>{{ L('بيانات المستجيب (خطوة قبل النموذج)', 'Respondent details (a step before the form)') }}</h2>
+      <p class="note">{{ L('حقول تظهر في صفحة مستقلة قبل الأسئلة، وتُحفظ مع كل إجابة وتظهر في الجداول والتصدير.', 'Fields shown on their own page before the questions; saved with every response and shown in tables and exports.') }}</p>
+      <label>{{ L('تعليمات أعلى الصفحة', 'Instructions at the top') }}</label>
+      <input type="text" data-s="filler_intro" maxlength="500">
+      <div id="fillerList" class="filler-list"></div>
+      <div class="row-actions">
+        <button type="button" class="sm ghost" id="addFiller"><i class="fa-solid fa-plus"></i> {{ L('حقل', 'Field') }}</button>
+        <button type="button" class="sm ghost" data-preset="name"><i class="fa-solid fa-user"></i> {{ L('الاسم', 'Name') }}</button>
+        <button type="button" class="sm ghost" data-preset="phone"><i class="fa-solid fa-phone"></i> {{ L('الهاتف', 'Phone') }}</button>
+        <button type="button" class="sm ghost" data-preset="grade"><i class="fa-solid fa-school"></i> {{ L('الصف والشعبة', 'Grade & section') }}</button>
+        <button type="button" class="sm ghost" data-preset="idno"><i class="fa-solid fa-id-card"></i> {{ L('الرقم الوطني', 'National number') }}</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tabpane" data-pane="quiz" hidden>
+  <div class="card">
+    <h2>{{ L('وضع الاختبار', 'Quiz mode') }}</h2>
+    {{ tog('quiz', 'هذا النموذج اختبار بدرجات', 'This form is a graded quiz', 'بعد التفعيل يظهر في كل سؤال حقل الدرجة والإجابة الصحيحة. الفقرات وما بلا إجابة صحيحة تُصحَّح يدوياً من صفحة الإجابة.', 'Once on, every question shows points and the correct answer. Paragraphs and questions without a correct answer are marked by hand on the response page.') }}
+    <div class="form-grid" style="margin-top:10px">
+      <div><label>{{ L('إظهار الدرجة للمستجيب', 'Show the score to the respondent') }}</label>
+        <select data-s="show_score"><option value="immediate">{{ L('فور الإرسال', 'Right after submitting') }}</option><option value="never">{{ L('لا تُظهر', 'Do not show') }}</option></select></div>
+      <div><label>{{ L('درجة النجاح %', 'Pass mark %') }}</label><input type="number" min="0" max="100" data-s="pass_mark"></div>
+    </div>
+    {{ tog('show_answers', 'إظهار الإجابات الصحيحة والخاطئة بعد الإرسال', 'Show which answers were right or wrong after submitting') }}
+    <p class="note" id="quizTotal"></p>
+  </div>
+</section>
+
+<section class="tabpane" data-pane="share" hidden>
+  {% if f.status != 'open' and not f.is_template %}<div class="alert warning" id="shareWarn">{{ L('النموذج ليس مفتوحاً، فلن يستطيع أحد الإجابة. غيّر الحالة إلى «مفتوح» من أعلى الصفحة.', 'The form is not open, so nobody can answer it. Change the status to "Open" at the top of the page.') }}</div>{% endif %}
+  <div class="grid2">
+    <div class="card"><h2><i class="fa-solid fa-link"></i> {{ L('الرابط', 'Link') }}</h2>
+      <div class="copy-row"><input type="text" readonly value="{{ public_url }}" dir="ltr" id="pubUrl"><button type="button" data-copy="{{ public_url }}"><i class="fa-solid fa-copy"></i> {{ L('نسخ', 'Copy') }}</button></div>
+      <div class="row-actions" style="margin-top:10px">
+        <a class="btn sm ghost" href="https://wa.me/?text={{ (f.title ~ ' ' ~ public_url)|urlencode }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+        <a class="btn sm ghost" href="mailto:?subject={{ f.title|urlencode }}&body={{ public_url|urlencode }}"><i class="fa-solid fa-envelope"></i> {{ L('بريد', 'Email') }}</a>
+        <a class="btn sm ghost" href="{{ public_url }}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> {{ L('فتح', 'Open') }}</a>
+      </div>
+      <h3 class="sub-h">{{ L('رابط بقيم مسبقة للحقول المخفية', 'Link with preset hidden fields') }}</h3>
+      <div id="prefill"></div>
+    </div>
+    <div class="card"><h2><i class="fa-solid fa-qrcode"></i> {{ L('رمز QR', 'QR code') }}</h2>
+      <div class="qr-box"><img src="{{ url_for('admin.form_qr', fid=f.id) }}" alt="QR" width="200" height="200"></div>
+      <a class="btn sm ghost" href="{{ url_for('admin.form_qr', fid=f.id, download=1) }}"><i class="fa-solid fa-download"></i> {{ L('حفظ الرمز (SVG للطباعة)', 'Save the code (SVG for printing)') }}</a>
+    </div>
+    <div class="card"><h2><i class="fa-solid fa-code"></i> {{ L('التضمين في موقع', 'Embed in a website') }}</h2>
+      {% set embed = '<iframe src="' ~ public_url ~ '?embed=1" width="100%" height="900" style="border:0;max-width:760px" loading="lazy" title="' ~ f.title ~ '"></iframe>' %}
+      <textarea readonly rows="4" dir="ltr" class="code-area">{{ embed }}</textarea>
+      <button type="button" class="sm" data-copy="{{ embed }}"><i class="fa-solid fa-copy"></i> {{ L('نسخ الكود', 'Copy the code') }}</button>
+      <p class="note">{{ L('النموذج المضمَّن لا يدعم الدخول بالبريد (المتصفحات تمنع ملفات تعريف الارتباط داخل الإطارات)؛ استخدم الرابط المباشر لهذه النماذج.', 'An embedded form cannot use email sign-in (browsers block cookies in frames); use the direct link for such forms.') }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="tabpane" data-pane="subforms" hidden>
+  <div class="card">
+    <h2>{{ L('النماذج الفرعية', 'Sub-forms') }}</h2>
+    <p class="note">{{ L('النموذج الفرعي نموذج مستقل مرتبط بهذا النموذج. تظهر روابطه في صفحة الشكر (إن فُعّل ذلك في الإعدادات)، وتُربط إجابته بإجابة النموذج الأم فتظهران معاً.', 'A sub-form is a separate form linked to this one. Its links appear on the thank-you page (if enabled in Settings), and its response is linked to the parent response so both show together.') }}</p>
+    {% if f.parent %}<p>{{ L('هذا النموذج فرعي من:', 'This form is a sub-form of:') }} <a href="{{ url_for('admin.builder', fid=f.parent.id) }}">{{ f.parent.title }}</a></p>{% endif %}
+    {% set kids = f.children.all() %}
+    {% if kids %}<ul class="list-links">{% for c in kids %}<li><a href="{{ url_for('admin.builder', fid=c.id) }}">{{ c.title }}</a> <span class="muted small">— {{ c.response_count }} {{ L('إجابة', 'responses') }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">{{ L('لا توجد نماذج فرعية.', 'No sub-forms.') }}</p>{% endif %}
+    <form method="post" action="{{ url_for('admin.form_subform', fid=f.id) }}"><button type="submit"><i class="fa-solid fa-plus"></i> {{ L('إنشاء نموذج فرعي', 'Create a sub-form') }}</button></form>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+window.FORM = {{ data|tojson }};
+window.B = {
+  saveUrl: {{ url_for('admin.api_form', fid=f.id)|tojson }}, mediaUrl: {{ url_for('admin.api_media')|tojson }},
+  publicUrl: {{ public_url|tojson }}, types: {{ TYPES|tojson }}, nResponses: {{ n_responses }},
+};
+</script>
+<script src="{{ asset('js/builder.js') }}"></script>
+{% endblock %}

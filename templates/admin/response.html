@@ -1,0 +1,80 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_macros.html' import form_tabs with context %}
+{% block title %}{{ L('الإجابة', 'Response') }} #{{ r.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ L('الإجابة', 'Response') }} #{{ r.id }} <span class="muted small">— {{ f.title_for(lang) }}</span></h1>
+  <div class="actions noprint">
+    {% if prev_id %}<a class="btn ghost" href="{{ url_for('admin.response_view', rid=prev_id) }}"><i class="fa-solid fa-arrow-right fwd"></i> {{ L('السابقة', 'Previous') }}</a>{% endif %}
+    <span class="muted small">{{ pos }} / {{ total }}</span>
+    {% if next_id %}<a class="btn ghost" href="{{ url_for('admin.response_view', rid=next_id) }}">{{ L('التالية', 'Next') }} <i class="fa-solid fa-arrow-left fwd"></i></a>{% endif %}
+    <button type="button" class="ghost" onclick="window.print()"><i class="fa-solid fa-print"></i> {{ L('طباعة', 'Print') }}</button>
+  </div>
+</div>
+<div class="noprint">{{ form_tabs(f, 'responses') }}</div>
+<div class="resp-grid">
+  <div>
+    {% if f.s('quiz') %}
+    <div class="card score-card"><div class="score-big">{{ '%g'|format(r.score or 0) }} / {{ '%g'|format(r.max_score or 0) }}</div>
+      <div>{{ r.percent if r.percent is not none else '—' }}%{% if f.s('pass_mark') and r.percent is not none %} · {{ L('ناجح', 'Passed') if r.percent >= f.s('pass_mark') else L('دون درجة النجاح', 'Below pass mark') }}{% endif %}</div></div>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.response_grade', rid=r.id) }}">
+    {% for q in shown %}
+      {% if q.type == 'section' %}<h2 class="sec-title">{{ qtitle(q, lang) }}</h2>
+      {% elif q.type != 'statement' %}
+      {% set d = detail.get(q.id) %}
+      <div class="card ans-card{{ ' ok' if d and d[2] }}{{ ' bad' if d and d[2] == false }}">
+        <div class="ans-q">{{ qtitle(q, lang) }}<span class="badge">{{ L(TYPES[q.type][0], TYPES[q.type][1]) }}</span></div>
+        {% set v = (r.answers or {}).get(q.id) %}
+        {% if q.type in ['file', 'signature'] and v %}
+          <div class="files">{% for fl in v %}
+            {% if fl.mime and fl.mime.startswith('image/') %}<a href="{{ fl.url }}" target="_blank" rel="noopener"><img src="{{ fl.url }}" alt="{{ fl.name }}" class="thumb"></a>{% endif %}
+            <a class="btn sm ghost" href="{{ fl.url }}?download=1"><i class="fa-solid fa-download"></i> {{ fl.name }} <span class="muted small">({{ ((fl.size or 0) / 1024)|round|int }} KB)</span></a>
+          {% endfor %}</div>
+        {% elif q.type in ['likert', 'matrix', 'matrix_multi'] and v %}
+          <table class="mini-tbl">{% for row in q.rows if row.id in v %}<tr><th>{{ row.label }}</th><td>{% set c = v[row.id] %}{% for col in q.cols if (col.id in c if c is not string else col.id == c) %}{{ col.label }}{{ '، ' if not loop.last }}{% endfor %}</td></tr>{% endfor %}</table>
+        {% else %}
+          <div class="ans-v">{{ answer_text(q, r.answers or {}, lang) or '—' }}</div>
+        {% endif %}
+        {% if d %}
+        <div class="grade-row">
+          {% if d[2] is none or q.type in ['long_text', 'short_text'] %}
+          <label>{{ L('الدرجة', 'Points') }} <input type="number" name="pts_{{ q.id }}" step="0.5" min="0" max="{{ d[1] }}" value="{{ (r.manual_points or {}).get(q.id, '') }}" placeholder="{{ '%g'|format(d[0]) }}"> / {{ '%g'|format(d[1]) }}</label>
+          {% else %}<span class="badge {{ 'ok' if d[2] else 'bad' }}">{{ L('صحيحة', 'Correct') if d[2] else L('خاطئة', 'Wrong') }} — {{ '%g'|format(d[0]) }} / {{ '%g'|format(d[1]) }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+    {% if detail %}<button type="submit" class="noprint"><i class="fa-solid fa-floppy-disk"></i> {{ L('حفظ الدرجات اليدوية', 'Save manual marks') }}</button>{% endif %}
+    </form>
+  </div>
+  <aside>
+    <div class="card"><h2>{{ L('المستجيب', 'Respondent') }}</h2>
+      <dl class="meta">
+        {% if r.email %}<dt>{{ L('البريد الموثّق', 'Verified email') }}</dt><dd dir="ltr">{{ r.email }}</dd>{% endif %}
+        {% for fd in f.s('filler_fields') or [] %}<dt>{{ fd.label }}</dt><dd>{{ (r.filler or {}).get(fd.key, '—') }}</dd>{% endfor %}
+        <dt>{{ L('وقت الإرسال', 'Submitted') }}</dt><dd>{{ r.submitted_at|local }}</dd>
+        <dt>{{ L('مدة الإجابة', 'Time taken') }}</dt><dd>{{ r.duration_sec|dur }}</dd>
+        <dt>{{ L('اللغة', 'Language') }}</dt><dd>{{ r.lang }}</dd>
+      </dl></div>
+    <div class="card"><h2>{{ L('الجهاز والمتصفح', 'Device and browser') }}</h2>
+      <dl class="meta">
+        <dt>{{ L('الجهاز', 'Device') }}</dt><dd>{{ r.device|device }}</dd>
+        <dt>{{ L('المتصفح', 'Browser') }}</dt><dd>{{ r.browser }} {{ (r.meta or {}).get('browser_version', '') }}</dd>
+        <dt>{{ L('نظام التشغيل', 'Operating system') }}</dt><dd>{{ r.os }}</dd>
+        <dt>{{ L('عنوان IP', 'IP address') }}</dt><dd class="mono">{{ r.ip }}</dd>
+        {% for k, ar, en in [('screen', 'الشاشة', 'Screen'), ('viewport', 'نافذة المتصفح', 'Window'), ('tz', 'المنطقة الزمنية', 'Time zone'), ('lang', 'لغة المتصفح', 'Browser language'), ('platform', 'المنصة', 'Platform'), ('referrer', 'جاء من', 'Came from'), ('source', 'المصدر', 'Source')] if (r.meta or {}).get(k) %}
+        <dt>{{ L(ar, en) }}</dt><dd dir="ltr">{{ r.meta[k] }}</dd>{% endfor %}
+        <dt>User-Agent</dt><dd class="mono small ua">{{ r.user_agent }}</dd>
+      </dl>
+      {% if r.flagged %}<p class="badge bad">{{ L('تكرار محتمل: إجابة سابقة من الجهاز نفسه خلال 24 ساعة.', 'Possible duplicate: an earlier response from the same device within 24 hours.') }}</p>{% endif %}
+    </div>
+    {% if r.parent_response or r.child_responses %}
+    <div class="card"><h2>{{ L('الإجابات المرتبطة', 'Linked responses') }}</h2>
+      {% if r.parent_response %}<p>{{ L('إجابة النموذج الأم:', 'Parent form response:') }} <a href="{{ url_for('admin.response_view', rid=r.parent_response.id) }}">#{{ r.parent_response.id }} — {{ r.parent_response.form.title }}</a></p>{% endif %}
+      {% for c in r.child_responses %}<p>↳ <a href="{{ url_for('admin.response_view', rid=c.id) }}">#{{ c.id }} — {{ c.form.title }}</a></p>{% endfor %}
+    </div>{% endif %}
+  </aside>
+</div>
+{% endblock %}

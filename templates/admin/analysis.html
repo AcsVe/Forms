@@ -1,0 +1,106 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_macros.html' import form_tabs, chart, kpi with context %}
+{% block title %}{{ L('التحليل', 'Analysis') }} — {{ f.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ f.title_for(lang) }}</h1>
+  <div class="actions noprint">
+    <a class="btn ghost" href="{{ url_for('admin.export', fid=f.id, fmt='xlsx', **args) }}"><i class="fa-solid fa-file-excel"></i> {{ L('Excel مع التحليل', 'Excel with analysis') }}</a>
+    <a class="btn ghost" href="{{ url_for('admin.export', fid=f.id, fmt='csv', **args) }}"><i class="fa-solid fa-file-csv"></i> CSV</a>
+    <button type="button" class="ghost" onclick="window.print()"><i class="fa-solid fa-print"></i> {{ L('طباعة التقرير', 'Print the report') }}</button>
+  </div>
+</div>
+<div class="noprint">{{ form_tabs(f, 'analysis') }}
+{% include 'admin/_resp_filters.html' %}</div>
+{% if args.get('seg_q') and args.get('seg_v') %}<p class="hint">{{ L('التحليل لشريحة من المستجيبين فقط.', 'This analysis covers one segment of respondents only.') }}</p>{% endif %}
+
+<div class="kpis">
+  {{ kpi(url_for('admin.responses', fid=f.id, **args), sm.n, 'الإجابات', 'Responses', 'fa-inbox') }}
+  {{ kpi(url_for('admin.responses', fid=f.id), f.views, 'مرات الفتح', 'Views', 'fa-eye', '', L('بدأ الإجابة', 'Started') ~ ': ' ~ (f.starts or 0)) }}
+  {{ kpi(url_for('admin.responses', fid=f.id), ((100 * sm.n / f.views)|round(1) ~ '%') if f.views else none, 'نسبة الإكمال', 'Completion rate', 'fa-percent', 'ok') }}
+  {{ kpi(url_for('admin.responses', fid=f.id), sm.avg_duration|dur if sm.avg_duration else none, 'متوسط المدة', 'Average time', 'fa-stopwatch') }}
+  {% if quiz %}{{ kpi(url_for('admin.responses', fid=f.id), (quiz.avg ~ '%') if quiz.avg is not none else none, 'متوسط الدرجة', 'Average score', 'fa-graduation-cap', 'violet') }}{% endif %}
+  {{ kpi(url_for('admin.responses', fid=f.id, flagged=1), sm.flagged, 'تكرار محتمل', 'Possible duplicates', 'fa-clone', 'bad') }}
+</div>
+
+{% if not rs %}<div class="card empty"><i class="fa-solid fa-chart-pie"></i><p>{{ L('لا توجد إجابات تطابق التصفية بعد.', 'No responses match the filter yet.') }}</p></div>{% else %}
+<div class="grid2">
+  <div class="card"><h2>{{ L('الإجابات خلال 30 يوماً', 'Responses in the last 30 days') }}</h2>{{ chart('line', sm.trend|map(attribute='label')|list, [{'label': L('الإجابات', 'Responses'), 'data': sm.trend|map(attribute='n')|list}], 220) }}</div>
+  <div class="card"><h2>{{ L('الأجهزة والمتصفحات', 'Devices and browsers') }}</h2>
+    <div class="two-mini">{{ chart('doughnut', sm.devices|map(attribute='label')|list, [{'label': L('الأجهزة', 'Devices'), 'data': sm.devices|map(attribute='n')|list}], 200) }}
+    {{ chart('doughnut', sm.browsers|map(attribute='label')|list, [{'label': L('المتصفحات', 'Browsers'), 'data': sm.browsers|map(attribute='n')|list}], 200) }}</div></div>
+</div>
+{% if quiz %}
+<div class="card"><h2><i class="fa-solid fa-graduation-cap"></i> {{ L('نتائج الاختبار', 'Quiz results') }}</h2>
+  <div class="stat-row"><div><b>{{ quiz.avg }}%</b><small>{{ L('المتوسط', 'Average') }}</small></div><div><b>{{ quiz.max }}%</b><small>{{ L('الأعلى', 'Highest') }}</small></div>
+    <div><b>{{ quiz.min }}%</b><small>{{ L('الأدنى', 'Lowest') }}</small></div>{% if quiz.pass_mark %}<div><b>{{ quiz.passed }} / {{ quiz.n }}</b><small>{{ L('الناجحون', 'Passed') }} (≥ {{ quiz.pass_mark }}%)</small></div>{% endif %}</div>
+  {{ chart('bar', quiz.bins|map(attribute='label')|list, [{'label': L('عدد الطلبة', 'Respondents'), 'data': quiz.bins|map(attribute='n')|list}], 220) }}
+</div>
+{% endif %}
+
+<h2 class="sec-title">{{ L('تحليل كل سؤال', 'Question by question') }}</h2>
+{% for st in stats %}
+<div class="card qstat" id="s-{{ st.id }}">
+  <div class="qs-head"><h3>{{ loop.index }}. {{ st.title }}</h3>
+    <span class="muted small">{{ L('أجاب', 'Answered') }} {{ st.n }}{% if st.skipped %} · {{ L('تخطّى', 'Skipped') }} {{ st.skipped }}{% endif %}{% if st.correct_pct is defined %} · <b class="ok-text">{{ L('صحيحة', 'Correct') }} {{ st.correct_pct }}%</b>{% endif %}</span></div>
+  {% if st.n == 0 %}<p class="muted">{{ L('لا إجابات على هذا السؤال.', 'No answers to this question.') }}</p>
+  {% elif st.kind == 'choice' %}
+    <div class="qs-grid">
+      {{ chart('bar' if st.multi or st['items']|length > 5 else 'doughnut', st['items']|map(attribute='label')|list, [{'label': L('العدد', 'Count'), 'data': st['items']|map(attribute='n')|list}], 240, {'indexAxis': 'y'} if st.multi or st['items']|length > 5 else {}) }}
+      <table class="mini-tbl"><thead><tr><th>{{ L('الخيار', 'Option') }}</th><th>{{ L('العدد', 'Count') }}</th><th>%</th></tr></thead><tbody>
+      {% for it in st['items'] %}<tr><td>{% if args.get('seg_q') != st.id %}<a href="{{ url_for('admin.analysis', fid=f.id, seg_q=st.id, seg_v=it.id) }}" title="{{ L('حلّل هذه الشريحة فقط', 'Analyse only this segment') }}">{{ it.label }}</a>{% else %}{{ it.label }}{% endif %}</td><td>{{ it.n }}</td>
+        <td><div class="pbar"><span style="width:{{ it.pct }}%"></span></div>{{ it.pct }}%</td></tr>{% endfor %}</tbody></table>
+    </div>
+    {% if st.multi %}<p class="note">{{ L('النسبة من عدد من أجابوا؛ يمكن اختيار أكثر من خيار.', 'Percent of those who answered; more than one option can be chosen.') }}</p>{% endif %}
+    {% if st.others %}<details><summary>{{ L('إجابات «أخرى»', '"Other" answers') }} ({{ st.others|length }})</summary><ul class="txt-list">{% for o in st.others %}<li>{{ o }}</li>{% endfor %}</ul></details>{% endif %}
+  {% elif st.kind == 'numeric' %}
+    <div class="stat-row"><div><b>{{ st.mean }}</b><small>{{ L('المتوسط', 'Mean') }}</small></div><div><b>{{ st.median }}</b><small>{{ L('الوسيط', 'Median') }}</small></div>
+      <div><b>{{ st.min }} – {{ st.max }}</b><small>{{ L('المدى', 'Range') }}</small></div><div><b>{{ st.sd }}</b><small>{{ L('الانحراف المعياري', 'Std. deviation') }}</small></div>
+      {% if st.satisfaction is defined %}<div><b>{{ st.satisfaction }}%</b><small>{{ L('راضون (أعلى درجتين)', 'Satisfied (top two)') }}</small></div>{% endif %}
+      {% if st.nps %}<div class="nps-box"><b>{{ st.nps.score }}</b><small>NPS</small></div>{% endif %}</div>
+    {% if st.nps %}<div class="nps-bar" role="img" aria-label="NPS"><span class="det" style="width:{{ st.nps.detractors }}%">{{ L('منتقدون', 'Detractors') }} {{ st.nps.detractors }}%</span><span class="pas" style="width:{{ st.nps.passives }}%">{{ L('محايدون', 'Passives') }} {{ st.nps.passives }}%</span><span class="pro" style="width:{{ st.nps.promoters }}%">{{ L('مروّجون', 'Promoters') }} {{ st.nps.promoters }}%</span></div>{% endif %}
+    {{ chart('bar', st.dist|map(attribute='label')|list, [{'label': L('العدد', 'Count'), 'data': st.dist|map(attribute='n')|list}], 220) }}
+  {% elif st.kind == 'matrix' %}
+    {% set ser = [] %}{% for c in st.cols %}{% set _ = ser.append({'label': c, 'data': st.rows|map(attribute='pcts')|map(attribute=loop.index0)|list}) %}{% endfor %}
+    {{ chart('bar', st.rows|map(attribute='label')|list, ser, 60 + 44 * st.rows|length, {'indexAxis': 'y', 'stacked': True, 'percent': True}) }}
+    <div class="dt-wrap"><table class="mini-tbl"><thead><tr><th></th>{% for c in st.cols %}<th>{{ c }}</th>{% endfor %}{% if st.type != 'matrix_multi' %}<th>{{ L('المتوسط', 'Mean') }}</th>{% endif %}</tr></thead><tbody>
+    {% for r in st.rows %}<tr><th>{{ r.label }}</th>{% for n in r.counts %}<td>{{ n }} <span class="muted small">({{ r.pcts[loop.index0] }}%)</span></td>{% endfor %}{% if st.type != 'matrix_multi' %}<td><b>{{ r.mean if r.mean is not none else '—' }}</b></td>{% endif %}</tr>{% endfor %}
+    </tbody></table></div>
+  {% elif st.kind in ['ranking', 'sum'] %}
+    {{ chart('bar', st['items']|map(attribute='label')|list, [{'label': L('متوسط الترتيب (الأقل أفضل)', 'Average rank (lower is better)') if st.kind == 'ranking' else L('متوسط النقاط', 'Average points'), 'data': st['items']|map(attribute='avg')|list}], 200, {'indexAxis': 'y'}) }}
+    {% if st.kind == 'ranking' %}<p class="note">{{ L('اختير أولاً:', 'Ranked first:') }} {% for it in st['items'] %}{{ it.label }} ({{ it.first }}){{ '، ' if not loop.last }}{% endfor %}</p>{% endif %}
+  {% elif st.kind == 'dates' %}
+    {{ chart('bar', st['items']|map(attribute='label')|list, [{'label': L('العدد', 'Count'), 'data': st['items']|map(attribute='n')|list}], 200) }}
+  {% elif st.kind == 'files' %}
+    <p>{{ st.count }} {{ L('ملفاً', 'file(s)') }}</p><div class="files">{% for r, fl in st.files %}<a class="btn sm ghost" href="{{ fl.url }}?download=1">{{ fl.name }}</a> {% endfor %}</div>
+  {% elif st.kind == 'text' %}
+    {% if st.words %}<div class="words">{% for w in st.words %}<span class="chip" style="font-size:{{ 12 + (w.n * 10 / st.words[0].n)|round|int }}px">{{ w.word }} <small>{{ w.n }}</small></span>{% endfor %}</div>{% endif %}
+    {% if st.repeated %}<p class="note">{{ L('إجابات متكررة:', 'Repeated answers:') }} {% for x in st.repeated %}«{{ x.text }}» ({{ x.n }}){{ '، ' if not loop.last }}{% endfor %}</p>{% endif %}
+    <details{{ ' open' if st.samples|length <= 6 }}><summary>{{ L('الإجابات', 'Answers') }} ({{ st.n }})</summary><ul class="txt-list">{% for r, t in st.samples %}<li><a href="{{ url_for('admin.response_view', rid=r.id) }}" class="muted small">#{{ r.id }}</a> {{ t }}</li>{% endfor %}</ul></details>
+  {% endif %}
+</div>
+{% endfor %}
+
+<div class="card noprint-off" id="crosstab"><h2><i class="fa-solid fa-table-cells"></i> {{ L('جدول متقاطع (مقارنة إجابات سؤالين)', 'Cross-tab (compare the answers to two questions)') }}</h2>
+  <form method="get" class="row" action="#crosstab">
+    {% for k in ['from', 'to', 'device', 'test', 'seg_q', 'seg_v'] if args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ args.get(k) }}">{% endfor %}
+    <div><label for="ca">{{ L('الصفوف: السؤال', 'Rows: question') }}</label><select id="ca" name="a">{% for q in crossable %}<option value="{{ q.id }}"{{ ' selected' if args.get('a') == q.id }}>{{ qtitle(q, lang)[:60] }}</option>{% endfor %}</select></div>
+    <div><label for="cb">{{ L('الأعمدة: السؤال', 'Columns: question') }}</label><select id="cb" name="b">{% for q in crossable %}<option value="{{ q.id }}"{{ ' selected' if args.get('b') == q.id or (not args.get('b') and loop.index == 2) }}>{{ qtitle(q, lang)[:60] }}</option>{% endfor %}</select></div>
+    <div class="shrink"><button type="submit">{{ L('اعرض', 'Show') }}</button></div>
+  </form>
+  {% if ct %}
+  {% set ser = [] %}{% for c in ct.cols %}{% set _ = ser.append({'label': c, 'data': ct.rows|map(attribute='pcts')|map(attribute=loop.index0)|list}) %}{% endfor %}
+  {{ chart('bar', ct.rows|map(attribute='label')|list, ser, 80 + 40 * ct.rows|length, {'indexAxis': 'y', 'stacked': True, 'percent': True}) }}
+  <div class="dt-wrap" style="margin-top:12px"><table class="mini-tbl ct"><thead><tr><th>{{ ct.a_title }} \ {{ ct.b_title }}</th>{% for c in ct.cols %}<th>{{ c }}</th>{% endfor %}<th>{{ L('المجموع', 'Total') }}</th></tr></thead><tbody>
+  {% for r in ct.rows %}<tr><th>{{ r.label }}</th>{% for n in r.counts %}<td style="--p:{{ r.pcts[loop.index0] }}">{{ n }} <span class="muted small">({{ r.pcts[loop.index0] }}%)</span></td>{% endfor %}<td><b>{{ r.total }}</b></td></tr>{% endfor %}
+  <tr class="tot"><th>{{ L('المجموع', 'Total') }}</th>{% for n in ct.col_totals %}<td><b>{{ n }}</b></td>{% endfor %}<td><b>{{ ct.grand }}</b></td></tr>
+  </tbody></table></div>
+  {% if ct.chi %}<p class="note">{{ L('اختبار كاي تربيع للاستقلال', 'Chi-square test of independence') }}: χ² = {{ ct.chi.x2 }}، {{ L('درجات الحرية', 'df') }} = {{ ct.chi.dof }}، p = {{ ct.chi.p }} —
+    {% if ct.chi.p < 0.05 %}<b>{{ L('توجد علاقة ذات دلالة إحصائية بين السؤالين (p أقل من 0.05).', 'There is a statistically significant relationship (p below 0.05).') }}</b>{% else %}{{ L('لا تظهر علاقة ذات دلالة إحصائية.', 'No statistically significant relationship.') }}{% endif %}
+    {{ L('(للإرشاد؛ يحتاج عدداً كافياً من الإجابات)', '(a guide; it needs enough responses)') }}</p>{% endif %}
+  <a class="btn sm ghost" href="{{ url_for('admin.analysis', fid=f.id, ct='csv', **args) }}"><i class="fa-solid fa-file-csv"></i> {{ L('تصدير الجدول CSV', 'Export the table as CSV') }}</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ asset('vendor/chart.umd.min.js') }}"></script><script src="{{ asset('js/charts.js') }}"></script>{% endblock %}

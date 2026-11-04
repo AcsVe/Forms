@@ -1,0 +1,34 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ L('نموذج جديد', 'New form') }}{% endblock %}
+{% block content %}
+<h1>{{ L('نموذج جديد', 'New form') }}</h1>
+<div class="new-grid">
+  <form class="card new-card" method="post">
+    <div class="new-ico"><i class="fa-solid fa-file-circle-plus"></i></div>
+    <h2>{{ L('نموذج فارغ', 'Blank form') }}</h2>
+    <label for="title">{{ L('عنوان النموذج', 'Form title') }}</label>
+    <input type="text" id="title" name="title" required maxlength="300" placeholder="{{ L('مثال: استبيان رضا الطلبة', 'Example: student satisfaction survey') }}" autofocus>
+    <label for="category" style="margin-top:10px">{{ L('التصنيف (اختياري)', 'Category (optional)') }}</label>
+    <input type="text" id="category" name="category" maxlength="120" placeholder="{{ L('مثال: استبيانات', 'Example: surveys') }}">
+    <button type="submit" style="margin-top:14px"><i class="fa-solid fa-plus"></i> {{ L('إنشاء وبدء التصميم', 'Create and start designing') }}</button>
+  </form>
+  <a class="card new-card link" href="{{ url_for('admin.form_import') }}">
+    <div class="new-ico"><i class="fa-solid fa-paste"></i></div>
+    <h2>{{ L('من نص أو سكربت ملصوق', 'From pasted text or script') }}</h2>
+    <p class="muted">{{ L('الصق قائمة أسئلة أو ملف JSON أو سكربت Google Apps Script فيتحوّل إلى نموذج جاهز للتعديل، مع معاينة قبل الإنشاء.', 'Paste a list of questions, a JSON file or a Google Apps Script and it becomes a form ready to edit, with a preview first.') }}</p>
+  </a>
+</div>
+<h2 class="sec-title">{{ L('أو ابدأ من قالب', 'Or start from a template') }}</h2>
+<div class="tpl-grid">
+{% for t in templates %}
+<form class="card tpl" method="post">
+  <input type="hidden" name="template_id" value="{{ t.id }}">
+  <div class="tpl-top" style="--k:{{ t.s('accent') or accent }}"><i class="fa-solid {{ 'fa-graduation-cap' if t.s('quiz') else 'fa-file-lines' }}"></i></div>
+  <h3>{{ t.title_for(lang) }}</h3>
+  <p class="muted small">{{ t.category or '' }}</p>
+  <div class="row-actions"><button class="sm" type="submit">{{ L('استخدم', 'Use') }}</button>
+    <a class="btn sm ghost" href="{{ url_for('public.fill', slug=t.slug, preview=1) }}" target="_blank" rel="noopener">{{ L('معاينة', 'Preview') }}</a></div>
+</form>
+{% endfor %}
+</div>
+{% endblock %}

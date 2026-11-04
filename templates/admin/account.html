@@ -1,0 +1,13 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ L('حسابي', 'My account') }}{% endblock %}
+{% block content %}
+<h1>{{ L('حسابي', 'My account') }}</h1>
+<form class="card narrow-card" method="post" autocomplete="off">
+  <p class="muted">{{ L('اسم المستخدم:', 'User name:') }} <b class="mono">{{ u.username }}</b> · {{ L('مسؤول', 'Administrator') if u.is_admin else L('محرّر', 'Editor') }}</p>
+  <label for="nm">{{ L('الاسم', 'Name') }}</label><input type="text" id="nm" name="name" value="{{ u.name or '' }}">
+  <label for="cur" style="margin-top:8px">{{ L('كلمة المرور الحالية', 'Current password') }}</label><input type="password" id="cur" name="current" required autocomplete="current-password">
+  <label for="nw" style="margin-top:8px">{{ L('كلمة المرور الجديدة', 'New password') }}</label><input type="password" id="nw" name="new" required minlength="8" autocomplete="new-password">
+  <label for="ag" style="margin-top:8px">{{ L('أعد كتابتها', 'Type it again') }}</label><input type="password" id="ag" name="again" required minlength="8" autocomplete="new-password">
+  <button type="submit" style="margin-top:12px">{{ L('حفظ', 'Save') }}</button>
+</form>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% from 'admin/_macros.html' import form_tabs with context %}
+{% block title %}{{ L('الإجابات', 'Responses') }} — {{ f.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ f.title_for(lang) }}</h1>
+  <div class="actions">
+    <a class="btn ghost" href="{{ url_for('admin.export', fid=f.id, fmt='xlsx', **args) }}"><i class="fa-solid fa-file-excel"></i> Excel</a>
+    <a class="btn ghost" href="{{ url_for('admin.export', fid=f.id, fmt='csv', **args) }}"><i class="fa-solid fa-file-csv"></i> CSV</a>
+    <a class="btn ghost" href="{{ url_for('admin.export', fid=f.id, fmt='json', **args) }}"><i class="fa-solid fa-file-code"></i> JSON</a>
+  </div>
+</div>
+{{ form_tabs(f, 'responses') }}
+{% set seg_questions = [] %}
+{% include 'admin/_resp_filters.html' %}
+{% if n_test and args.get('test') != '1' %}<p class="note">{{ L('مخفي:', 'Hidden:') }} {{ n_test }} {{ L('إجابة من المعاينة.', 'preview response(s).') }}</p>{% endif %}
+<div class="card">
+{% if rows %}
+{{ bulk_bar('responses', [('star', 'تمييز بنجمة', 'Star', false), ('unstar', 'إزالة النجمة', 'Unstar', false), ('unflag', 'ليست تكراراً', 'Not a duplicate', false), ('real', 'اعتبارها حقيقية', 'Count as real', false), ('delete', 'حذف', 'Delete', true)]) }}
+<div class="dt-wrap"><table data-table class="resp">
+<thead><tr><th class="chk" data-nosort>{{ bulk_all('responses') }}</th>
+  <th data-sort="num">#</th>
+  <th data-filter="text">{{ L('الوقت', 'Time') }}</th>
+  <th data-filter="text">{{ L('المستجيب', 'Respondent') }}</th>
+  {% for q in cols %}<th data-filter="{{ 'select' if q.type in ['single', 'dropdown', 'yesno', 'scale', 'rating', 'nps', 'image_choice'] else 'text' }}">{{ qtitle(q, lang)[:40] }}</th>{% endfor %}
+  {% if f.s('quiz') %}<th data-sort="num">{{ L('الدرجة %', 'Score %') }}</th>{% endif %}
+  <th data-filter="select">{{ L('الجهاز', 'Device') }}</th>
+  <th data-filter="select">{{ L('المتصفح', 'Browser') }}</th>
+  <th data-sort="num">{{ L('المدة', 'Time taken') }}</th>
+  <th data-filter="select">{{ L('علامات', 'Flags') }}</th>
+</tr></thead><tbody>
+{% for r in rows %}
+<tr data-row>
+  <td class="chk">{{ bulk_item('responses', r.id) }}</td>
+  <td data-value="{{ r.id }}"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.id }}</a></td>
+  <td class="small nowrap"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.submitted_at|local }}</a></td>
+  <td>{{ r.who }}{% if r.email and r.who != r.email %}<div class="muted small" dir="ltr">{{ r.email }}</div>{% endif %}</td>
+  {% for q in cols %}<td class="ans">{{ answer_text(q, r.answers or {}, lang)[:120] }}</td>{% endfor %}
+  {% if f.s('quiz') %}<td data-value="{{ r.percent if r.percent is not none else '' }}">{{ r.percent if r.percent is not none else '—' }}</td>{% endif %}
+  <td>{{ r.device|device }}</td>
+  <td>{{ r.browser or '' }}</td>
+  <td data-value="{{ r.duration_sec or 0 }}">{{ r.duration_sec|dur }}</td>
+  <td>{% if r.starred %}<span class="badge warn" title="{{ L('مميزة', 'Starred') }}">★</span>{% endif %}{% if r.flagged %}<span class="badge bad">{{ L('تكرار محتمل', 'Possible duplicate') }}</span>{% endif %}{% if r.is_test %}<span class="badge">{{ L('معاينة', 'Preview') }}</span>{% endif %}{% if r.parent_response_id %}<span class="badge">↳ #{{ r.parent_response_id }}</span>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+<div class="empty"><i class="fa-solid fa-inbox"></i><p>{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>
+  <a class="btn" href="{{ url_for('admin.builder', fid=f.id) }}#share">{{ L('شارك النموذج', 'Share the form') }}</a></div>
+{% endif %}
+</div>
+{% endblock %}

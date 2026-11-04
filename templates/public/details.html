@@ -1,0 +1,29 @@
+{% extends 'public/_base.html' %}
+{% block body %}
+<div class="f-card gate">
+  {% if f.s('header_image') %}<img class="f-banner" src="{{ f.s('header_image') }}" alt="">{% endif %}
+  <div class="f-head-in">
+  <h1>{{ f.title_for(lang) }}</h1>
+  <p class="muted">{{ f.s('filler_intro') or L('أدخل بياناتك قبل البدء بالأسئلة.', 'Enter your details before the questions.') }}</p>
+  {% if email %}<p class="who"><i class="fa-solid fa-user-check"></i> <span dir="ltr">{{ email }}</span></p>{% endif %}
+  <form method="post" action="{{ request.full_path }}" class="gate-form" novalidate>
+    {% for fd in fields %}
+    {% set lab = (fd.label_en if lang == 'en' and fd.label_en else fd.label) %}
+    <div class="g-fld{{ ' has-err' if errors.get(fd.key) }}">
+      <label for="f_{{ fd.key }}">{{ lab }}{% if fd.required %} <span class="req">*</span>{% endif %}</label>
+      {% if fd.type == 'select' %}
+      <select id="f_{{ fd.key }}" name="f_{{ fd.key }}" class="f-in"{% if fd.required %} required{% endif %}><option value="">{{ L('اختر…', 'Choose…') }}</option>
+        {% for o in (fd.options or '').replace('،', ',').split(',') if o.strip() %}<option{% if values.get(fd.key) == o.strip() %} selected{% endif %}>{{ o.strip() }}</option>{% endfor %}</select>
+      {% else %}
+      <input id="f_{{ fd.key }}" name="f_{{ fd.key }}" class="f-in" value="{{ values.get(fd.key, '') }}"
+             type="{{ {'email': 'email', 'phone': 'tel', 'number': 'number', 'date': 'date'}.get(fd.type, 'text') }}"{% if fd.type in ['email', 'phone'] %} dir="ltr"{% endif %}{% if fd.required %} required{% endif %}
+             autocomplete="{{ {'name': 'name', 'phone': 'tel', 'email': 'email'}.get(fd.key, 'on') }}">
+      {% endif %}
+      {% if errors.get(fd.key) %}<div class="q-err">{{ errors[fd.key] }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="f-btn">{{ L('متابعة إلى الأسئلة', 'Continue to the questions') }} <i class="fa-solid fa-arrow-left fwd-next"></i></button>
+  </form>
+  </div>
+</div>
+{% endblock %}

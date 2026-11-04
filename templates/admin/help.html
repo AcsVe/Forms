@@ -1,0 +1,28 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ L('دليل الاستخدام', 'User guide') }}{% endblock %}
+{% block content %}
+<h1>{{ L('دليل الاستخدام', 'User guide') }}</h1>
+<div class="help">
+{% if lang == 'en' %}
+<div class="card"><h2>1. Create a form</h2><p><b>New form</b> → a blank form, a template, or <b>Paste text or script</b> (a question list, JSON, or a Google Apps Script) with a live preview. Every change in the designer is saved automatically.</p></div>
+<div class="card"><h2>2. Questions</h2><p>28 types: short answer, paragraph, email, phone, link, number, multiple choice, checkboxes, dropdown, yes/no, image choice, linear scale, rating, NPS, slider, Likert, grids, ranking, constant sum, date, time, date and time, file upload, signature, hidden field, sections (pages) and text/image/video blocks.</p>
+<p><b>Display rules</b>: open a question → "Show this question only if…". <b>Branching</b>: next to each option of a one-choice question choose the section to go to, or "submit the form". A section can also have "After this section go to".</p></div>
+<div class="card"><h2>3. Look</h2><p>Colour, font, header image, background image, looping muted video and background music (the respondent starts it with a button). Two languages: turn on "Two languages" and fill the English fields; respondents get a language switch.</p></div>
+<div class="card"><h2>4. Access</h2><p>By default anyone with the link can answer, and the server records device, browser, system, IP, screen and time zone. Optional: email sign-in with a six-digit code (needs mail set up), allowed domains, one response per email or per device, and a "respondent details" step (name, phone, grade…).</p></div>
+<div class="card"><h2>5. Quiz</h2><p>Quiz tab → turn on. Each question gets points and a correct answer; paragraphs are marked by hand on the response page. Choose whether to show the score and the right answers after submitting, and a pass mark.</p></div>
+<div class="card"><h2>6. Share</h2><p>Set the status to <b>Open</b>, then Share: link, QR code (SVG for printing), WhatsApp, email and embed code. A link with preset hidden fields records where a response came from.</p></div>
+<div class="card"><h2>7. Sub-forms</h2><p>A sub-form is linked to a parent form; its links appear on the parent's thank-you page and its response is linked to the parent response.</p></div>
+<div class="card"><h2>8. Analysis</h2><p>Each form: charts for every question, averages, NPS, satisfaction, grids, word frequency, quiz results, segment filters, a cross-tab of any two questions with a chi-square test, Excel/CSV/JSON export. <b>Compare forms</b>: indicators, monthly responses, devices, grouping by category, owner, month, device or browser, and shared questions side by side.</p></div>
+{% else %}
+<div class="card"><h2>١. إنشاء نموذج</h2><p>«نموذج جديد» ← نموذج فارغ، أو قالب، أو «لصق نص أو سكربت» (قائمة أسئلة، أو JSON، أو سكربت Google Apps Script) مع معاينة فورية قبل الإنشاء. كل تعديل في صفحة التصميم يُحفظ تلقائياً.</p></div>
+<div class="card"><h2>٢. الأسئلة</h2><p>ثمانية وعشرون نوعاً: نص قصير، فقرة، بريد، هاتف، رابط، رقم، اختيار من متعدد، مربعات اختيار، قائمة منسدلة، نعم/لا، اختيار بالصور، مقياس خطي، تقييم، مؤشر صافي الترويج NPS، شريط تمرير، مقياس ليكرت، شبكات، ترتيب، توزيع النقاط، تاريخ، وقت، تاريخ ووقت، رفع ملف، توقيع، حقل مخفي، أقسام (صفحات)، ونص أو صورة أو فيديو.</p>
+<p><b>شرط الإظهار</b>: افتح السؤال ← «شرط إظهار السؤال». <b>التفرّع</b>: بجانب كل خيار في سؤال الاختيار الواحد اختر القسم الذي ينتقل إليه المستجيب أو «إرسال النموذج»، وللقسم أيضاً «بعد هذا القسم انتقل إلى».</p></div>
+<div class="card"><h2>٣. المظهر</h2><p>اللون، والخط، وصورة الترويسة، وصورة الخلفية، وفيديو الخلفية (صامت ومتكرر)، وموسيقى الخلفية (يشغّلها المستجيب بزر). نموذج بلغتين: فعّل «نموذج بلغتين» واكتب حقول الإنجليزية، فيظهر للمستجيب زر تبديل اللغة.</p></div>
+<div class="card"><h2>٤. الدخول</h2><p>افتراضياً يجيب أي شخص معه الرابط، ويسجّل الخادم الجهاز والمتصفح والنظام وعنوان IP والشاشة والمنطقة الزمنية. ويمكن طلب الدخول بالبريد برمز من ستة أرقام (يحتاج إعداد البريد)، وتحديد نطاقات البريد، وإجابة واحدة لكل بريد أو جهاز، وخطوة «بيانات المستجيب» (الاسم، الهاتف، الصف…).</p></div>
+<div class="card"><h2>٥. الاختبار</h2><p>تبويب «الاختبار» ← تفعيل. لكل سؤال درجة وإجابة صحيحة، والفقرات تُصحَّح يدوياً من صفحة الإجابة. اختر إظهار الدرجة والإجابات الصحيحة بعد الإرسال، ودرجة النجاح.</p></div>
+<div class="card"><h2>٦. المشاركة</h2><p>غيّر الحالة إلى «مفتوح» ثم «مشاركة»: الرابط، ورمز QR (SVG للطباعة)، وواتساب، والبريد، وكود التضمين. والرابط بقيم مسبقة للحقول المخفية يسجّل مصدر الإجابة.</p></div>
+<div class="card"><h2>٧. النماذج الفرعية</h2><p>النموذج الفرعي مرتبط بنموذج أم؛ تظهر روابطه في صفحة الشكر للنموذج الأم، وتُربط إجابته بإجابة النموذج الأم.</p></div>
+<div class="card"><h2>٨. التحليل</h2><p>لكل نموذج: رسوم لكل سؤال، والمتوسطات، وNPS، ونسبة الرضا، والشبكات، والكلمات الأكثر تكراراً، ونتائج الاختبار، والتصفية بالشريحة، وجدول متقاطع لأي سؤالين مع اختبار كاي تربيع، والتصدير إلى Excel وCSV وJSON. و«المقارنة بين النماذج»: المؤشرات، والإجابات شهرياً، والأجهزة، والتجميع حسب التصنيف أو صاحب النموذج أو الشهر أو الجهاز أو المتصفح، والأسئلة المشتركة جنباً إلى جنب.</p></div>
+{% endif %}
+</div>
+{% endblock %}

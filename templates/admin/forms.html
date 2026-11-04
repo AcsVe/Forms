@@ -1,0 +1,66 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% from 'admin/_macros.html' import status_badge, status_text with context %}
+{% block title %}{{ L('النماذج', 'Forms') }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ L('النماذج', 'Forms') }} <span class="count-pill">{{ rows|length }}</span></h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('admin.form_new') }}"><i class="fa-solid fa-plus"></i> {{ L('نموذج جديد', 'New form') }}</a>
+    <a class="btn ghost" href="{{ url_for('admin.form_import') }}"><i class="fa-solid fa-paste"></i> {{ L('لصق نص', 'Paste text') }}</a>
+  </div>
+</div>
+<nav class="tabs">
+  <a class="{{ 'on' if not args.get('status') and not args.get('all') }}" href="{{ url_for('admin.forms') }}">{{ L('الحالية', 'Current') }}</a>
+  <a class="{{ 'on' if args.get('status') == 'open' }}" href="{{ url_for('admin.forms', status='open') }}">{{ L('مفتوحة', 'Open') }}</a>
+  <a class="{{ 'on' if args.get('status') == 'draft' }}" href="{{ url_for('admin.forms', status='draft') }}">{{ L('مسودات', 'Drafts') }}</a>
+  <a class="{{ 'on' if args.get('status') == 'closed' }}" href="{{ url_for('admin.forms', status='closed') }}">{{ L('مغلقة', 'Closed') }}</a>
+  <a class="{{ 'on' if args.get('status') == 'archived' }}" href="{{ url_for('admin.forms', status='archived') }}">{{ L('المؤرشفة', 'Archived') }}</a>
+  <a class="{{ 'on' if args.get('all') }}" href="{{ url_for('admin.forms', all=1) }}">{{ L('الكل', 'All') }}</a>
+</nav>
+{% if 'category' in args or args.get('owner') or args.get('quiz') or args.get('sub') or args.get('empty') %}
+<p class="hint">{{ L('القائمة مُصفّاة.', 'The list is filtered.') }} <a href="{{ url_for('admin.forms') }}">{{ L('إلغاء التصفية', 'Clear the filter') }}</a></p>
+{% endif %}
+<div class="card">
+{% if rows %}
+{{ bulk_bar('forms', [('open', 'فتح', 'Open', false), ('closed', 'إغلاق', 'Close', false), ('draft', 'مسودة', 'Draft', false),
+                      ('duplicate', 'نسخ', 'Duplicate', false), ('template', 'حفظ قالباً', 'Save as template', false),
+                      ('archive', 'أرشفة', 'Archive', false), ('unarchive', 'إلغاء الأرشفة', 'Unarchive', false), ('delete', 'حذف', 'Delete', true)]) }}
+<div class="dt-wrap"><table data-table class="resp">
+<thead><tr><th class="chk" data-nosort>{{ bulk_all('forms') }}</th>
+  <th data-filter="text">{{ L('العنوان', 'Title') }}</th>
+  <th data-filter="select">{{ L('التصنيف', 'Category') }}</th>
+  <th data-filter="select">{{ L('الحالة', 'Status') }}</th>
+  <th data-sort="num">{{ L('الإجابات', 'Responses') }}</th>
+  <th data-sort="num">{{ L('الفتح', 'Views') }}</th>
+  <th data-filter="select">{{ L('صاحبه', 'Owner') }}</th>
+  <th>{{ L('آخر تعديل', 'Updated') }}</th>
+  <th data-nosort class="act"></th></tr></thead>
+<tbody>
+{% for f in rows %}
+<tr data-row>
+  <td class="chk">{{ bulk_item('forms', f.id) }}</td>
+  <td data-value="{{ f.title }}"><a href="{{ url_for('admin.builder', fid=f.id) }}"><b>{{ f.title_for(lang) }}</b></a>
+    {% if f.s('quiz') %}<span class="badge violet" title="{{ L('اختبار', 'Quiz') }}"><i class="fa-solid fa-graduation-cap"></i></span>{% endif %}
+    {% if f.parent_id %}<span class="badge" title="{{ L('نموذج فرعي', 'Sub-form') }}"><i class="fa-solid fa-diagram-project"></i> {{ f.parent.title if f.parent else '' }}</span>{% endif %}
+    {% if f.s('require_email') %}<span class="badge" title="{{ L('يتطلب الدخول بالبريد', 'Email sign-in required') }}"><i class="fa-solid fa-envelope-circle-check"></i></span>{% endif %}</td>
+  <td>{{ f.category or '' }}</td>
+  <td data-value="{{ status_text(f) }}">{{ status_badge(f) }}</td>
+  <td data-value="{{ counts.get(f.id, 0) }}"><a href="{{ url_for('admin.responses', fid=f.id) }}">{{ counts.get(f.id, 0) }}</a></td>
+  <td data-value="{{ f.views or 0 }}">{{ f.views or 0 }}</td>
+  <td>{{ f.owner.display if f.owner else '—' }}</td>
+  <td data-value="{{ f.updated_at|local }}" class="small">{{ f.updated_at|local }}</td>
+  <td class="act"><div class="row-actions">
+    <a class="icon-btn" href="{{ url_for('admin.builder', fid=f.id) }}" title="{{ L('تصميم', 'Design') }}" aria-label="{{ L('تصميم', 'Design') }}"><i class="fa-solid fa-pen-ruler"></i></a>
+    <a class="icon-btn" href="{{ url_for('admin.analysis', fid=f.id) }}" title="{{ L('التحليل', 'Analysis') }}" aria-label="{{ L('التحليل', 'Analysis') }}"><i class="fa-solid fa-chart-pie"></i></a>
+    <a class="icon-btn" href="{{ url_for('public.fill', slug=f.slug, preview=1) }}" target="_blank" rel="noopener" title="{{ L('معاينة', 'Preview') }}" aria-label="{{ L('معاينة', 'Preview') }}"><i class="fa-solid fa-eye"></i></a>
+  </div></td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+<div class="empty"><i class="fa-solid fa-file-circle-plus"></i><p>{{ L('لا توجد نماذج هنا بعد.', 'No forms here yet.') }}</p>
+  <a class="btn" href="{{ url_for('admin.form_new') }}">{{ L('أنشئ أول نموذج', 'Create the first form') }}</a></div>
+{% endif %}
+</div>
+{% endblock %}

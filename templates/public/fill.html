@@ -1,0 +1,40 @@
+{% extends 'public/_base.html' %}
+{% block body %}
+{% if preview %}<div class="preview-bar"><i class="fa-solid fa-eye"></i> {{ L('معاينة: الإجابات المرسلة هنا تُحفظ تجربةً ولا تدخل في التحليل.', 'Preview: responses sent here are saved as tests and are not counted in the analysis.') }}
+  {% if f.status != 'open' %}<b>{{ L('النموذج ليس مفتوحاً للجمهور بعد.', 'The form is not open to the public yet.') }}</b>{% endif %}</div>{% endif %}
+<div class="f-card f-head">
+  {% if f.s('header_image') %}<img class="f-banner" src="{{ f.s('header_image') }}" alt="">{% endif %}
+  <div class="f-head-in">
+    <h1 id="fTitle">{{ f.title_for(lang) }}</h1>
+    {% if f.description %}<p class="f-desc" id="fDesc">{{ f.description }}</p>{% endif %}
+    {% if email or (session.get('ff') or {}).get(f.slug) %}
+    <div class="who"><i class="fa-solid fa-user-check"></i>
+      {% set ff = (session.get('ff') or {}).get(f.slug) or {} %}
+      {{ ff.get('name') or '' }}{% if email %} <span dir="ltr">{{ email }}</span>{% endif %}
+      <form method="post" action="{{ url_for('public.details_reset', slug=f.slug) }}" class="inline">{% if email %}<input type="hidden" name="email" value="1">{% endif %}
+        <button type="submit" class="linkish">{{ L('تغيير', 'Change') }}</button></form></div>
+    {% endif %}
+    <p class="req-note" id="reqNote" hidden><span class="req">*</span> {{ L('سؤال مطلوب', 'Required question') }}</p>
+  </div>
+  <div class="progress" id="progress" hidden><div class="bar" id="progBar"></div></div>
+  <div class="timer" id="timer" hidden></div>
+</div>
+<form id="fillForm" novalidate autocomplete="on">
+  <div id="pages"></div>
+  <input type="text" name="website" id="hp" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+  <div class="f-nav">
+    <button type="button" class="f-btn ghost" id="backBtn" hidden><i class="fa-solid fa-arrow-right fwd-back"></i> {{ L('السابق', 'Back') }}</button>
+    <button type="button" class="f-btn" id="nextBtn">{{ L('التالي', 'Next') }} <i class="fa-solid fa-arrow-left fwd-next"></i></button>
+    <button type="submit" class="f-btn" id="submitBtn" hidden><i class="fa-solid fa-paper-plane"></i> {{ L('إرسال', 'Submit') }}</button>
+    <span class="f-pageinfo" id="pageInfo"></span>
+  </div>
+  <div class="f-err" id="formErr" role="alert" hidden></div>
+  <p class="draft-note" id="draftNote" hidden><i class="fa-solid fa-floppy-disk"></i> {{ L('تُحفظ إجاباتك في هذا الجهاز تلقائياً حتى ترسلها.', 'Your answers are kept on this device until you submit.') }}
+    <button type="button" class="linkish" id="clearDraft">{{ L('مسح المسودة', 'Clear the draft') }}</button></p>
+</form>
+<noscript><div class="f-card"><p>{{ L('يحتاج هذا النموذج إلى تفعيل JavaScript في المتصفح.', 'This form needs JavaScript to be enabled in the browser.') }}</p></div></noscript>
+{% endblock %}
+{% block scripts %}
+<script>window.FILL = {{ data|tojson }};</script>
+<script src="{{ asset('js/fill.js') }}"></script>
+{% endblock %}

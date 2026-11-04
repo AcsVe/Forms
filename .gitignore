@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
+.env
+config.env
+data/
+logs/
+backups/
+venv/
+.venv/
+pyexe.txt
+.secret_key
+*.pem
+*license_key_generator*.py

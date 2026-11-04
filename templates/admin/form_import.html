@@ -1,0 +1,89 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ L('إنشاء نموذج من نص ملصوق', 'Create a form from pasted text') }}{% endblock %}
+{% block content %}
+<h1>{{ L('إنشاء نموذج من نص أو سكربت ملصوق', 'Create a form from pasted text or script') }}</h1>
+<div class="import-grid">
+  <form class="card" method="post" enctype="multipart/form-data" id="imp">
+    <label for="title">{{ L('العنوان (اختياري — يؤخذ من النص إن وُجد)', 'Title (optional — taken from the text if present)') }}</label>
+    <input type="text" id="title" name="title" maxlength="300">
+    <label for="text" style="margin-top:10px">{{ L('النص أو JSON أو سكربت Google Apps Script', 'Text, JSON or Google Apps Script') }}</label>
+    <textarea id="text" name="text" rows="18" class="code-area" placeholder="# {{ L('عنوان النموذج', 'Form title') }}&#10;1. {{ L('ما اسمك؟', 'What is your name?') }} *&#10;2. {{ L('ما صفك؟', 'Which grade?') }} [{{ L('قائمة', 'dropdown') }}]&#10;- {{ L('السابع', 'Seventh') }}&#10;- {{ L('الثامن', 'Eighth') }}">{{ text }}</textarea>
+    <div class="row" style="margin-top:10px">
+      <div><label for="file">{{ L('أو اختر ملفاً (txt أو json أو js)', 'Or choose a file (txt, json or js)') }}</label><input type="file" id="file" name="file" accept=".txt,.json,.js,.gs,.md"></div>
+    </div>
+    <div class="row-actions" style="margin-top:14px">
+      <button type="submit"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ L('إنشاء النموذج', 'Create the form') }}</button>
+      <button type="button" class="ghost" data-example="text">{{ L('مثال نصي', 'Text example') }}</button>
+      <button type="button" class="ghost" data-example="json">{{ L('مثال JSON', 'JSON example') }}</button>
+      <button type="button" class="ghost" data-example="script">{{ L('مثال سكربت', 'Script example') }}</button>
+    </div>
+  </form>
+  <div class="card">
+    <h2>{{ L('المعاينة', 'Preview') }} <span class="muted small" id="fmt"></span></h2>
+    <div id="preview" class="imp-preview"><p class="muted">{{ L('اكتب أو الصق نصاً لتظهر المعاينة هنا.', 'Type or paste text to see the preview here.') }}</p></div>
+  </div>
+</div>
+<details class="card"><summary><b>{{ L('صيغة النص', 'Text format') }}</b></summary>
+<div class="dt-wrap"><table><thead><tr><th>{{ L('اكتب', 'Write') }}</th><th>{{ L('النتيجة', 'Result') }}</th></tr></thead><tbody>
+<tr><td class="mono"># {{ L('العنوان', 'Title') }}</td><td>{{ L('عنوان النموذج', 'Form title') }}</td></tr>
+<tr><td class="mono">&gt; {{ L('نص', 'text') }}</td><td>{{ L('وصف النموذج أو وصف السؤال الذي قبله', 'Form description, or help text of the question above') }}</td></tr>
+<tr><td class="mono">## {{ L('القسم', 'Section') }}</td><td>{{ L('قسم وصفحة جديدة (أو ---)', 'A section on a new page (or ---)') }}</td></tr>
+<tr><td class="mono">1. {{ L('السؤال', 'Question') }} *</td><td>{{ L('سؤال؛ النجمة في النهاية تجعله مطلوباً', 'A question; a final star makes it required') }}</td></tr>
+<tr><td class="mono">- {{ L('خيار', 'option') }}</td><td>{{ L('خيارات «اختيار من متعدد»؛ و[ ] لمربعات الاختيار', 'Multiple-choice options; [ ] for checkboxes') }}</td></tr>
+<tr><td class="mono">- {{ L('خيار', 'option') }} ✓</td><td>{{ L('الإجابة الصحيحة في الاختبار', 'The correct answer in a quiz') }}</td></tr>
+<tr><td class="mono">| {{ L('ممتاز', 'Excellent') }} | {{ L('جيد', 'Good') }} |</td><td>{{ L('أعمدة الشبكة، وخياراتها صفوف', 'Grid columns; the options become rows') }}</td></tr>
+<tr><td class="mono">[فقرة] [تاريخ] [وقت] [رقم] [بريد] [هاتف] [قائمة] [متعدد] [نعم لا] [تقييم] [1-10] [NPS] [شريط] [ليكرت] [شبكة] [ترتيب] [توزيع] [ملف] [توقيع]</td><td>{{ L('نوع السؤال (وتُقبل الأسماء الإنجليزية مثل [paragraph] [date] [rating])', 'Question type (English names such as [paragraph] [date] [rating] work too)') }}</td></tr>
+<tr><td class="mono">[2 {{ L('درجات', 'points') }}]</td><td>{{ L('درجة السؤال في الاختبار', 'Points for the question in a quiz') }}</td></tr>
+</tbody></table></div>
+<p class="note">{{ L('يُقبل أيضاً: ملف JSON صدّرته من هذا النظام («تصدير بنية النموذج»)، أو مصفوفة أسئلة، أو سكربت Google Apps Script يستخدم addMultipleChoiceItem وaddCheckboxItem وaddListItem وaddTextItem وaddScaleItem وaddGridItem وغيرها.', 'Also accepted: a JSON file exported from this system ("Export form structure"), an array of questions, or a Google Apps Script using addMultipleChoiceItem, addCheckboxItem, addListItem, addTextItem, addScaleItem, addGridItem and others.') }}</p>
+</details>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const ta = document.getElementById('text'), out = document.getElementById('preview'), fmt = document.getElementById('fmt');
+  const AR = LANG !== 'en';
+  const EX = {
+    text: AR ? "# استبيان المكتبة المدرسية\n> رأيك يساعدنا على التطوير.\n1. ما صفك؟ * [قائمة]\n- السابع\n- الثامن\n- التاسع\n2. كم مرة تزور المكتبة شهرياً؟ [رقم]\n3. ما أنواع الكتب التي تفضلها؟ [متعدد]\n- القصص\n- العلوم\n- التاريخ\n- أخرى\n## التقييم\n4. قيّم خدمات المكتبة * [شبكة]\n| ممتاز | جيد | ضعيف |\n- الإعارة\n- الهدوء\n- تنوع الكتب\n5. ما مدى رضاك العام؟ [تقييم]\n6. اقتراحاتك [فقرة]"
+              : "# School library survey\n> Your opinion helps us improve.\n1. Which grade are you in? * [dropdown]\n- Seventh\n- Eighth\n- Ninth\n2. How many times a month do you visit? [number]\n3. Which kinds of books do you like? [checkboxes]\n- Stories\n- Science\n- History\n- Other\n## Rating\n4. Rate the library services * [grid]\n| Excellent | Good | Poor |\n- Borrowing\n- Quiet\n- Variety of books\n5. Overall satisfaction [rating]\n6. Your suggestions [paragraph]",
+    json: JSON.stringify({ title: AR ? 'تسجيل في نادي العلوم' : 'Science club sign-up', questions: [
+      { type: 'short_text', title: AR ? 'الاسم الكامل' : 'Full name', required: true },
+      { type: 'single', title: AR ? 'الصف' : 'Grade', choices: [AR ? 'السابع' : 'Seventh', AR ? 'الثامن' : 'Eighth'] },
+      { type: 'nps', title: AR ? 'ما مدى احتمال أن تنصح زميلك بالنادي؟' : 'How likely are you to recommend the club?' },
+      { type: 'date', title: AR ? 'تاريخ الميلاد' : 'Date of birth' }] }, null, 2),
+    script: "function createForm() {\n  var form = FormApp.create('" + (AR ? 'اختبار الجغرافيا' : 'Geography quiz') + "');\n  form.addMultipleChoiceItem()\n      .setTitle('" + (AR ? 'ما عاصمة الأردن؟' : 'What is the capital of Jordan?') + "')\n      .setChoiceValues(['" + (AR ? 'عمّان' : 'Amman') + "', '" + (AR ? 'إربد' : 'Irbid') + "', '" + (AR ? 'العقبة' : 'Aqaba') + "'])\n      .setRequired(true);\n  form.addCheckboxItem().setTitle('" + (AR ? 'أي هذه بحار؟' : 'Which of these are seas?') + "').setChoiceValues(['" + (AR ? 'البحر الأحمر' : 'Red Sea') + "', '" + (AR ? 'البحر الميت' : 'Dead Sea') + "']);\n  form.addScaleItem().setTitle('" + (AR ? 'ما مدى صعوبة الاختبار؟' : 'How hard was the quiz?') + "').setBounds(1, 5).setLabels('" + (AR ? 'سهل' : 'Easy') + "', '" + (AR ? 'صعب' : 'Hard') + "');\n  form.addParagraphTextItem().setTitle('" + (AR ? 'ملاحظاتك' : 'Your notes') + "');\n}",
+  };
+  document.querySelectorAll('[data-example]').forEach((b) => b.addEventListener('click', () => { ta.value = EX[b.dataset.example]; run(); }));
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let timer;
+  async function run() {
+    const text = ta.value.trim();
+    if (!text) { out.innerHTML = ''; fmt.textContent = ''; return; }
+    const r = await fetch('{{ url_for("admin.api_parse") }}', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+    const d = await r.json();
+    fmt.textContent = '(' + ({ text: AR ? 'نص' : 'text', json: 'JSON', script: AR ? 'سكربت' : 'script' }[d.format] || '') + ')';
+    let h = '';
+    if (d.title) h += `<h3>${esc(d.title)}</h3>`;
+    if (d.description) h += `<p class="muted">${esc(d.description)}</p>`;
+    d.warnings.forEach((w) => { h += `<div class="alert warning">${esc(w)}</div>`; });
+    let n = 0;
+    d.questions.forEach((q) => {
+      if (q.type === 'section') { h += `<div class="imp-sec"><i class="fa-solid fa-layer-group"></i> ${esc(q.title || (AR ? 'قسم جديد' : 'New section'))}</div>`; return; }
+      n++;
+      h += `<div class="imp-q"><div><b>${n}. ${esc(q.title)}</b>${q.required ? ' <span class="req">*</span>' : ''} <span class="badge">${esc(q.type_label)}</span>${q.points ? ` <span class="badge violet">${q.points} ${AR ? 'درجة' : 'pts'}</span>` : ''}</div>`;
+      if (q.choices.length) h += '<ul>' + q.choices.map((c) => `<li>${esc(c)}</li>`).join('') + '</ul>';
+      if (q.rows.length) h += `<p class="small muted">${AR ? 'الصفوف' : 'Rows'}: ${q.rows.map(esc).join('، ')}<br>${AR ? 'الأعمدة' : 'Columns'}: ${q.cols.map(esc).join('، ')}</p>`;
+      h += '</div>';
+    });
+    if (!d.questions.length) h += `<p class="muted">${AR ? 'لم يُعثر على أسئلة بعد.' : 'No questions found yet.'}</p>`;
+    out.innerHTML = h;
+  }
+  ta.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 350); });
+  document.getElementById('file').addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader(); rd.onload = () => { ta.value = rd.result; run(); }; rd.readAsText(f, 'utf-8');
+  });
+  if (ta.value.trim()) run();
+})();
+</script>
+{% endblock %}

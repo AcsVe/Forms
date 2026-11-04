@@ -1,0 +1,71 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_macros.html' import kpi, chart, status_badge with context %}
+{% block title %}{{ L('لوحة الإحصاءات', 'Dashboard') }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ L('لوحة الإحصاءات', 'Dashboard') }}</h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('admin.form_new') }}"><i class="fa-solid fa-plus"></i> {{ L('نموذج جديد', 'New form') }}</a>
+    <a class="btn ghost" href="{{ url_for('admin.form_import') }}"><i class="fa-solid fa-paste"></i> {{ L('من نص ملصوق', 'From pasted text') }}</a>
+    <a class="btn ghost" href="{{ url_for('admin.compare') }}"><i class="fa-solid fa-code-compare"></i> {{ L('مقارنة', 'Compare') }}</a>
+  </div>
+</div>
+
+<h2 class="sec-title">{{ L('النماذج', 'Forms') }}</h2>
+<div class="kpis">
+  {{ kpi(url_for('admin.forms'), k.forms, 'كل النماذج', 'All forms', 'fa-file-lines') }}
+  {{ kpi(url_for('admin.forms', status='open'), k.open, 'مفتوحة', 'Open', 'fa-lock-open', 'ok') }}
+  {{ kpi(url_for('admin.forms', status='draft'), k.draft, 'مسودات', 'Drafts', 'fa-pen', 'warn') }}
+  {{ kpi(url_for('admin.forms', status='closed'), k.closed, 'مغلقة', 'Closed', 'fa-lock', 'bad') }}
+  {{ kpi(url_for('admin.forms', quiz=1), k.quizzes, 'اختبارات', 'Quizzes', 'fa-graduation-cap', 'violet') }}
+  {{ kpi(url_for('admin.forms', sub=1), k.subforms, 'نماذج فرعية', 'Sub-forms', 'fa-diagram-project') }}
+  {{ kpi(url_for('admin.forms', empty=1), k.no_responses, 'بلا إجابات', 'No responses', 'fa-circle-exclamation', 'warn') }}
+  {{ kpi(url_for('admin.templates'), k.templates, 'القوالب', 'Templates', 'fa-swatchbook', 'violet') }}
+  {{ kpi(url_for('admin.forms', status='archived'), k.archived, 'المؤرشفة', 'Archived', 'fa-box-archive') }}
+</div>
+
+<h2 class="sec-title">{{ L('الإجابات', 'Responses') }}</h2>
+<div class="kpis">
+  {{ kpi(url_for('admin.all_responses'), k.responses, 'كل الإجابات', 'All responses', 'fa-inbox') }}
+  {{ kpi(url_for('admin.all_responses', period='today'), k.today, 'اليوم', 'Today', 'fa-calendar-day', 'ok') }}
+  {{ kpi(url_for('admin.all_responses', period='week'), k.week, 'آخر سبعة أيام', 'Last 7 days', 'fa-calendar-week', 'ok') }}
+  {{ kpi(url_for('admin.forms'), k.views, 'مرات الفتح', 'Views', 'fa-eye', '', L('نسبة الإكمال', 'Completion') ~ ': ' ~ (k.completion ~ '%' if k.completion is not none else '—')) }}
+  {{ kpi(url_for('admin.all_responses', flagged=1), k.flagged, 'تكرار محتمل', 'Possible duplicates', 'fa-clone', 'bad') }}
+  {{ kpi(url_for('admin.all_responses'), sm.avg_duration|dur if sm.avg_duration else none, 'متوسط مدة الإجابة', 'Average time to answer', 'fa-stopwatch') }}
+</div>
+
+<div class="grid2">
+  <div class="card"><h2>{{ L('الإجابات خلال 30 يوماً', 'Responses in the last 30 days') }}</h2>
+    {{ chart('line', sm.trend|map(attribute='label')|list, [{'label': L('الإجابات', 'Responses'), 'data': sm.trend|map(attribute='n')|list}]) }}</div>
+  <div class="card"><h2>{{ L('الأجهزة', 'Devices') }}</h2>
+    {% if sm.n %}{{ chart('doughnut', sm.devices|map(attribute='label')|list, [{'label': L('الأجهزة', 'Devices'), 'data': sm.devices|map(attribute='n')|list}]) }}
+    <p class="note">{% for d in sm.devices %}<a href="{{ url_for('admin.all_responses', device=d.key) }}">{{ d.label }}: {{ d.n }} ({{ d.pct }}%)</a>{{ ' · ' if not loop.last }}{% endfor %}</p>
+    {% else %}<p class="muted">{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>{% endif %}</div>
+  <div class="card"><h2>{{ L('المتصفحات', 'Browsers') }}</h2>
+    {{ chart('bar', sm.browsers|map(attribute='label')|list, [{'label': L('الإجابات', 'Responses'), 'data': sm.browsers|map(attribute='n')|list}], 220, {'indexAxis': 'y'}) }}
+    <p class="note">{% for b in sm.browsers %}<a href="{{ url_for('admin.all_responses', browser=b.label) }}">{{ b.label }}: {{ b.n }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p></div>
+  <div class="card"><h2>{{ L('ساعات الإجابة (توقيت عمّان)', 'Answer hours (Amman time)') }}</h2>
+    {{ chart('bar', sm.hours|map(attribute='label')|list, [{'label': L('الإجابات', 'Responses'), 'data': sm.hours|map(attribute='n')|list}], 220) }}</div>
+</div>
+
+<div class="grid2">
+  <div class="card"><h2>{{ L('أكثر النماذج إجابات', 'Forms with the most responses') }}</h2>
+    {% if top %}<div class="dt-wrap"><table data-table><thead><tr><th>{{ L('النموذج', 'Form') }}</th><th>{{ L('الحالة', 'Status') }}</th><th data-sort="num">{{ L('الإجابات', 'Responses') }}</th></tr></thead><tbody>
+    {% for f, n in top %}<tr><td><a href="{{ url_for('admin.analysis', fid=f.id) }}">{{ f.title_for(lang) }}</a></td><td>{{ status_badge(f) }}</td><td data-value="{{ n }}"><a href="{{ url_for('admin.responses', fid=f.id) }}">{{ n }}</a></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="muted">{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>{% endif %}</div>
+  <div class="card"><h2>{{ L('حسب التصنيف', 'By category') }}</h2>
+    <div class="dt-wrap"><table data-table><thead><tr><th>{{ L('التصنيف', 'Category') }}</th><th data-sort="num">{{ L('النماذج', 'Forms') }}</th><th data-sort="num">{{ L('الإجابات', 'Responses') }}</th><th data-nosort></th></tr></thead><tbody>
+    {% for c, v in cats %}<tr><td><a href="{{ url_for('admin.forms', category=c) }}">{{ c or L('بلا تصنيف', 'Uncategorized') }}</a></td><td data-value="{{ v.forms }}"><a href="{{ url_for('admin.forms', category=c) }}">{{ v.forms }}</a></td><td data-value="{{ v.n }}">{{ v.n }}</td>
+      <td><a class="btn sm ghost" href="{{ url_for('admin.compare', category=c) }}">{{ L('قارن', 'Compare') }}</a></td></tr>{% endfor %}
+    </tbody></table></div></div>
+  <div class="card"><h2>{{ L('حسب صاحب النموذج', 'By owner') }}</h2>
+    <div class="dt-wrap"><table data-table><thead><tr><th>{{ L('المستخدم', 'User') }}</th><th data-sort="num">{{ L('النماذج', 'Forms') }}</th><th data-sort="num">{{ L('الإجابات', 'Responses') }}</th></tr></thead><tbody>
+    {% for oid, v in owners %}<tr><td><a href="{{ url_for('admin.forms', owner=oid or 'none') }}">{{ v.user.display if v.user else '—' }}</a></td><td data-value="{{ v.forms }}"><a href="{{ url_for('admin.forms', owner=oid or 'none') }}">{{ v.forms }}</a></td><td data-value="{{ v.n }}">{{ v.n }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+  <div class="card"><h2>{{ L('أحدث الإجابات', 'Latest responses') }}</h2>
+    {% if recent %}<ul class="list-links">{% for r in recent %}<li><a href="{{ url_for('admin.response_view', rid=r.id) }}"><b>{{ fmap[r.form_id].title_for(lang) if r.form_id in fmap else '' }}</b>
+      <span class="muted small">— {{ r.submitted_at|local }} · {{ r.device|device }} · {{ r.browser }}{% if r.who %} · {{ r.who }}{% endif %}</span></a></li>{% endfor %}</ul>
+    {% else %}<p class="muted">{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>{% endif %}</div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('vendor/chart.umd.min.js') }}"></script><script src="{{ asset('js/charts.js') }}"></script>{% endblock %}

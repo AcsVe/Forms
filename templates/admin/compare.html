@@ -1,0 +1,81 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_macros.html' import chart, status_badge with context %}
+{% block title %}{{ L('المقارنة بين النماذج', 'Compare forms') }}{% endblock %}
+{% block content %}
+<h1>{{ L('المقارنة بين النماذج', 'Compare forms') }}</h1>
+<form class="card" method="get" id="cmpForm">
+  <div class="row">
+    <div><label for="cq">{{ L('اختر النماذج (اثنان أو أكثر)', 'Choose the forms (two or more)') }}</label><input type="search" id="cq" placeholder="{{ L('بحث…', 'Search…') }}"></div>
+    <div><label for="cc">{{ L('أو اختر تصنيفاً كاملاً', 'Or pick a whole category') }}</label><select id="cc"><option value="">—</option>{% for c in cats %}<option value="{{ c }}">{{ c or L('بلا تصنيف', 'Uncategorized') }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="pick-list" id="pick">
+    {% for f in all_forms %}<label class="pick-item" data-row data-cat="{{ f.category or '' }}" data-q="{{ (f.title ~ ' ' ~ (f.category or ''))|lower }}">
+      <input type="checkbox" name="ids" value="{{ f.id }}"{{ ' checked' if f.id in ids }}> <span>{{ f.title_for(lang) }} <span class="muted small">{{ f.category or '' }} · {{ f.response_count }}</span></span></label>{% endfor %}
+  </div>
+  <div class="row" style="margin-top:12px">
+    <div><label for="by">{{ L('معيار التجميع', 'Group by') }}</label><select id="by" name="by">
+      {% for k, ar, en in [('form', 'النموذج', 'Form'), ('category', 'التصنيف', 'Category'), ('owner', 'صاحب النموذج', 'Owner'), ('status', 'الحالة', 'Status'), ('month', 'الشهر', 'Month'), ('device', 'الجهاز', 'Device'), ('browser', 'المتصفح', 'Browser'), ('os', 'نظام التشغيل', 'Operating system')] %}
+      <option value="{{ k }}"{{ ' selected' if by == k }}>{{ L(ar, en) }}</option>{% endfor %}</select></div>
+    <div><label for="cf">{{ L('من تاريخ', 'From') }}</label><input type="date" id="cf" name="from" value="{{ args.get('from', '') }}"></div>
+    <div><label for="ct">{{ L('إلى تاريخ', 'To') }}</label><input type="date" id="ct" name="to" value="{{ args.get('to', '') }}"></div>
+    <div><label for="cd">{{ L('الجهاز', 'Device') }}</label><select id="cd" name="device"><option value="">{{ L('الكل', 'All') }}</option>
+      {% for k, ar, en in [('mobile', 'هاتف', 'Phone'), ('tablet', 'جهاز لوحي', 'Tablet'), ('desktop', 'حاسوب', 'Computer')] %}<option value="{{ k }}"{{ ' selected' if args.get('device') == k }}>{{ L(ar, en) }}</option>{% endfor %}</select></div>
+    <div class="shrink"><button type="submit"><i class="fa-solid fa-code-compare"></i> {{ L('قارن', 'Compare') }}</button></div>
+  </div>
+</form>
+
+{% if result %}
+<div class="card"><h2>{{ L('المؤشرات لكل نموذج', 'Indicators per form') }}</h2>
+<div class="dt-wrap"><table data-table><thead><tr>
+  <th data-filter="text">{{ L('النموذج', 'Form') }}</th><th data-filter="select">{{ L('التصنيف', 'Category') }}</th><th data-filter="select">{{ L('الحالة', 'Status') }}</th>
+  <th data-sort="num">{{ L('الإجابات', 'Responses') }}</th><th data-sort="num">{{ L('الفتح', 'Views') }}</th><th data-sort="num">{{ L('الإكمال %', 'Completion %') }}</th>
+  <th data-sort="num">{{ L('متوسط المدة (ث)', 'Avg time (s)') }}</th><th data-sort="num">{{ L('متوسط الدرجة %', 'Avg score %') }}</th>
+  <th data-sort="num">{{ L('إجابة يومياً', 'Per day') }}</th><th data-sort="num">{{ L('من الهاتف %', 'From phones %') }}</th><th data-sort="num">{{ L('الأسئلة', 'Questions') }}</th><th>{{ L('آخر إجابة', 'Last response') }}</th></tr></thead><tbody>
+{% for m in result.metrics %}<tr>
+  <td><a href="{{ url_for('admin.analysis', fid=m.form.id) }}">{{ m.form.title_for(lang) }}</a></td><td>{{ m.form.category or '' }}</td><td>{{ status_badge(m.form) }}</td>
+  <td data-value="{{ m.n }}">{{ m.n }}</td><td data-value="{{ m.views }}">{{ m.views }}</td><td data-value="{{ m.completion or 0 }}">{{ m.completion if m.completion is not none else '—' }}</td>
+  <td data-value="{{ m.avg_duration or 0 }}">{{ m.avg_duration or '—' }}</td><td data-value="{{ m.avg_score or 0 }}">{{ m.avg_score if m.avg_score is not none else '—' }}</td>
+  <td data-value="{{ m.per_day }}">{{ m.per_day }}</td><td data-value="{{ m.mobile_pct }}">{{ m.mobile_pct }}</td><td data-value="{{ m.questions }}">{{ m.questions }}</td><td class="small">{{ m.last|local }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+<div class="grid2">
+  <div class="card"><h2>{{ L('عدد الإجابات', 'Number of responses') }}</h2>
+    {{ chart('bar', result.metrics|map(attribute='form')|map(attribute='title')|list, [{'label': L('الإجابات', 'Responses'), 'data': result.metrics|map(attribute='n')|list}], 240) }}</div>
+  <div class="card"><h2>{{ L('الإجابات شهرياً', 'Responses per month') }}</h2>
+    {{ chart('line', result.monthly.labels, result.monthly.series, 240) }}</div>
+  <div class="card"><h2>{{ L('الأجهزة لكل نموذج', 'Devices per form') }}</h2>
+    {{ chart('bar', result.devices|map(attribute='label')|list, [{'label': L('هاتف', 'Phone'), 'data': result.devices|map(attribute='mobile')|list}, {'label': L('جهاز لوحي', 'Tablet'), 'data': result.devices|map(attribute='tablet')|list}, {'label': L('حاسوب', 'Computer'), 'data': result.devices|map(attribute='desktop')|list}], 240, {'stacked': True}) }}</div>
+  <div class="card"><h2>{{ L('التجميع حسب', 'Grouped by') }}: {{ {'form': L('النموذج', 'Form'), 'category': L('التصنيف', 'Category'), 'owner': L('صاحب النموذج', 'Owner'), 'status': L('الحالة', 'Status'), 'month': L('الشهر', 'Month'), 'device': L('الجهاز', 'Device'), 'browser': L('المتصفح', 'Browser'), 'os': L('نظام التشغيل', 'Operating system')}[by] }}</h2>
+    <div class="dt-wrap"><table data-table><thead><tr><th>{{ L('المجموعة', 'Group') }}</th><th data-sort="num">{{ L('النماذج', 'Forms') }}</th><th data-sort="num">{{ L('الإجابات', 'Responses') }}</th><th data-sort="num">%</th><th data-sort="num">{{ L('متوسط المدة', 'Avg time') }}</th><th data-sort="num">{{ L('متوسط الدرجة', 'Avg score') }}</th></tr></thead><tbody>
+    {% for g in result.groups %}<tr><td>{{ g.key }}</td><td data-value="{{ g.forms }}">{{ g.forms }}</td><td data-value="{{ g.n }}">{{ g.n }}</td><td data-value="{{ g.pct }}">{{ g.pct }}</td><td data-value="{{ g.avg_duration or 0 }}">{{ g.avg_duration|dur }}</td><td data-value="{{ g.avg_score or 0 }}">{{ g.avg_score if g.avg_score is not none else '—' }}</td></tr>
+    {% else %}<tr><td colspan="6" class="muted">{{ L('لا توجد إجابات.', 'No responses.') }}</td></tr>{% endfor %}</tbody></table></div></div>
+</div>
+
+<h2 class="sec-title">{{ L('الأسئلة المشتركة', 'Shared questions') }}</h2>
+<p class="note">{{ L('تُطابَق الأسئلة بالمعرّف نفسه (نماذج منسوخة من بعضها أو من قالب واحد) أو بالعنوان والنوع نفسيهما.', 'Questions match by the same id (forms copied from each other or from one template) or by the same title and type.') }}</p>
+{% for sq in result.shared %}
+<div class="card"><h3>{{ sq.title }} <span class="badge">{{ L(TYPES[sq.type][0], TYPES[sq.type][1]) }}</span></h3>
+  {% if sq.numeric %}
+    {{ chart('bar', sq.series|map(attribute='form')|map(attribute='title')|list, [{'label': L('المتوسط', 'Mean'), 'data': sq.series|map(attribute='mean')|list}], 200) }}
+    <table class="mini-tbl"><thead><tr><th>{{ L('النموذج', 'Form') }}</th><th>{{ L('أجاب', 'Answered') }}</th><th>{{ L('المتوسط', 'Mean') }}</th></tr></thead><tbody>{% for s in sq.series %}<tr><td>{{ s.form.title }}</td><td>{{ s.n }}</td><td><b>{{ s.mean if s.mean is not none else '—' }}</b></td></tr>{% endfor %}</tbody></table>
+  {% elif sq.labels %}
+    {% set ser = [] %}{% for s in sq.series %}{% set _ = ser.append({'label': s.form.title, 'data': s.pcts}) %}{% endfor %}
+    {{ chart('bar', sq.labels, ser, 240, {'percent': True}) }}
+    <div class="dt-wrap"><table class="mini-tbl"><thead><tr><th>{{ L('النموذج', 'Form') }}</th>{% for l in sq.labels %}<th>{{ l }}</th>{% endfor %}<th>{{ L('أجاب', 'Answered') }}</th></tr></thead><tbody>
+    {% for s in sq.series %}<tr><td>{{ s.form.title }}</td>{% for p in s.pcts %}<td>{{ p }}% <span class="muted small">({{ s.ns[loop.index0] }})</span></td>{% endfor %}<td>{{ s.n }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="muted">{{ L('لا تتوفر مقارنة رقمية لهذا النوع.', 'No numeric comparison for this type.') }}</p>{% endif %}
+</div>
+{% else %}<div class="card"><p class="muted">{{ L('لا توجد أسئلة مشتركة بين النماذج المختارة.', 'The chosen forms share no questions.') }}</p></div>{% endfor %}
+{% elif ids %}<div class="card"><p class="muted">{{ L('اختر نموذجاً واحداً على الأقل.', 'Choose at least one form.') }}</p></div>{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ asset('vendor/chart.umd.min.js') }}"></script><script src="{{ asset('js/charts.js') }}"></script>
+<script>
+(function () {
+  const q = document.getElementById('cq'), c = document.getElementById('cc');
+  const rows = [...document.querySelectorAll('#pick [data-row]')];
+  q.addEventListener('input', () => { const v = normText(q.value); rows.forEach((r) => { r.hidden = v && !normText(r.dataset.q).includes(v); }); });
+  c.addEventListener('change', () => { if (c.selectedIndex === 0) return; rows.forEach((r) => { r.querySelector('input').checked = r.dataset.cat === c.value; }); });
+})();
+</script>
+{% endblock %}

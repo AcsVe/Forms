@@ -1,0 +1,34 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% block title %}{{ L('كل الإجابات', 'All responses') }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ L('كل الإجابات', 'All responses') }} <span class="count-pill">{{ rows|length }}</span></h1></div>
+<nav class="tabs">
+  <a class="{{ 'on' if not args.get('period') }}" href="{{ url_for('admin.all_responses') }}">{{ L('الكل', 'All') }}</a>
+  <a class="{{ 'on' if args.get('period') == 'today' }}" href="{{ url_for('admin.all_responses', period='today') }}">{{ L('اليوم', 'Today') }}</a>
+  <a class="{{ 'on' if args.get('period') == 'week' }}" href="{{ url_for('admin.all_responses', period='week') }}">{{ L('سبعة أيام', '7 days') }}</a>
+  <a class="{{ 'on' if args.get('period') == 'month' }}" href="{{ url_for('admin.all_responses', period='month') }}">{{ L('ثلاثون يوماً', '30 days') }}</a>
+</nav>
+{% if args.get('device') or args.get('browser') or args.get('flagged') or args.get('form') %}<p class="hint">{{ L('القائمة مُصفّاة.', 'The list is filtered.') }} <a href="{{ url_for('admin.all_responses') }}">{{ L('إلغاء التصفية', 'Clear the filter') }}</a></p>{% endif %}
+<div class="card">
+{% if rows %}
+{{ bulk_bar('responses', [('star', 'تمييز بنجمة', 'Star', false), ('unstar', 'إزالة النجمة', 'Unstar', false), ('unflag', 'ليست تكراراً', 'Not a duplicate', false), ('delete', 'حذف', 'Delete', true)]) }}
+<div class="dt-wrap"><table data-table class="resp">
+<thead><tr><th class="chk" data-nosort>{{ bulk_all('responses') }}</th><th data-sort="num">#</th>
+  <th data-filter="select">{{ L('النموذج', 'Form') }}</th><th data-filter="text">{{ L('الوقت', 'Time') }}</th>
+  <th data-filter="text">{{ L('المستجيب', 'Respondent') }}</th><th data-filter="select">{{ L('الجهاز', 'Device') }}</th>
+  <th data-filter="select">{{ L('المتصفح', 'Browser') }}</th><th data-filter="select">{{ L('النظام', 'System') }}</th>
+  <th data-filter="text">IP</th><th data-sort="num">{{ L('المدة', 'Time taken') }}</th></tr></thead><tbody>
+{% for r in rows %}<tr data-row>
+  <td class="chk">{{ bulk_item('responses', r.id) }}</td>
+  <td data-value="{{ r.id }}"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.id }}</a></td>
+  <td>{{ forms[r.form_id].title_for(lang) }}</td>
+  <td class="small nowrap">{{ r.submitted_at|local }}</td>
+  <td>{{ r.who }}{% if r.flagged %} <span class="badge bad">{{ L('تكرار محتمل', 'Possible duplicate') }}</span>{% endif %}</td>
+  <td>{{ r.device|device }}</td><td>{{ r.browser or '' }}</td><td>{{ r.os or '' }}</td>
+  <td class="mono small">{{ r.ip or '' }}</td><td data-value="{{ r.duration_sec or 0 }}">{{ r.duration_sec|dur }}</td>
+</tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="empty"><i class="fa-solid fa-inbox"></i><p>{{ L('لا توجد إجابات.', 'No responses.') }}</p></div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% block title %}{{ L('القوالب', 'Templates') }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ L('القوالب', 'Templates') }} <span class="count-pill">{{ rows|length }}</span></h1>
+  <p class="muted small" style="flex-basis:100%;margin:0">{{ L('القالب نموذج جاهز يُنسخ منه نموذج جديد. لحفظ أي نموذج قالباً افتحه واختر «حفظ قالباً».', 'A template is a ready form you copy into a new one. To save any form as a template, open it and choose "Save as template".') }}</p>
+</div>
+{% if rows %}
+{{ bulk_bar('templates', [('duplicate', 'نسخ', 'Duplicate', false), ('delete', 'حذف', 'Delete', true)]) }}
+<div class="filters"><input type="search" id="tq" placeholder="{{ L('بحث في القوالب…', 'Search templates…') }}"></div>
+<div class="tpl-grid">
+{% for t in rows %}
+<div class="card tpl" data-row id="t{{ t.id }}" data-q="{{ (t.title ~ ' ' ~ (t.title_en or '') ~ ' ' ~ (t.category or ''))|lower }}">
+  <span class="card-sel">{{ bulk_item('templates', t.id) }}</span>
+  <div class="tpl-top" style="--k:{{ t.s('accent') or accent }}"><i class="fa-solid {{ 'fa-graduation-cap' if t.s('quiz') else 'fa-file-lines' }}"></i></div>
+  <h3>{{ t.title_for(lang) }}</h3>
+  <p class="muted small">{{ t.category or '' }} · {{ t.questions|rejectattr('type', 'in', ['section', 'statement'])|list|length }} {{ L('سؤالاً', 'questions') }}</p>
+  <div class="row-actions">
+    <form method="post" action="{{ url_for('admin.form_new') }}"><input type="hidden" name="template_id" value="{{ t.id }}">
+      <button class="sm" type="submit"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ L('استخدم القالب', 'Use template') }}</button></form>
+    <a class="btn sm ghost" href="{{ url_for('public.fill', slug=t.slug, preview=1) }}" target="_blank" rel="noopener">{{ L('معاينة', 'Preview') }}</a>
+    {% if me.is_admin or t.owner_id == me.id %}<a class="btn sm ghost" href="{{ url_for('admin.builder', fid=t.id) }}">{{ L('تعديل', 'Edit') }}</a>{% endif %}
+  </div>
+</div>
+{% endfor %}
+</div>
+{% else %}<div class="card empty"><p>{{ L('لا توجد قوالب.', 'No templates.') }}</p></div>{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+document.getElementById('tq') && document.getElementById('tq').addEventListener('input', (e) => {
+  const v = normText(e.target.value);
+  document.querySelectorAll('.tpl[data-row]').forEach((c) => { c.hidden = v && !normText(c.dataset.q).includes(v); });
+  window.bulkRefresh('templates');
+});
+</script>{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'admin/base.html' %}
+{% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
+{% block title %}{{ L('المستخدمون', 'Users') }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ L('المستخدمون', 'Users') }} <span class="count-pill">{{ rows|length }}</span></h1></div>
+<p class="note">{{ L('المسؤول يرى كل النماذج ويدير المستخدمين والإعدادات؛ المحرّر يرى نماذجه فقط ويستخدم كل القوالب.', 'An administrator sees all forms and manages users and settings; an editor sees only their own forms and can use every template.') }}</p>
+<div class="grid2 users-grid">
+<div class="card">
+{{ bulk_bar('users', [('activate', 'تفعيل', 'Activate', false), ('deactivate', 'تعطيل', 'Deactivate', false), ('delete', 'حذف', 'Delete', true)]) }}
+<div class="dt-wrap"><table data-table class="resp"><thead><tr><th class="chk" data-nosort>{{ bulk_all('users') }}</th>
+  <th data-filter="text">{{ L('اسم المستخدم', 'User name') }}</th><th data-filter="text">{{ L('الاسم', 'Name') }}</th>
+  <th data-filter="select">{{ L('الدور', 'Role') }}</th><th data-filter="select">{{ L('الحالة', 'Status') }}</th>
+  <th data-sort="num">{{ L('النماذج', 'Forms') }}</th><th>{{ L('آخر دخول', 'Last sign-in') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
+{% for u in rows %}<tr data-row>
+  <td class="chk">{{ bulk_item('users', u.id) }}</td>
+  <td class="mono">{{ u.username }}{% if u.id == me.id %} <span class="badge">{{ L('أنت', 'You') }}</span>{% endif %}</td>
+  <td>{{ u.name or '' }}<div class="muted small" dir="ltr">{{ u.email or '' }}</div></td>
+  <td>{{ L('مسؤول', 'Administrator') if u.is_admin else L('محرّر', 'Editor') }}</td>
+  <td>{% if u.active %}<span class="badge ok">{{ L('فعّال', 'Active') }}</span>{% else %}<span class="badge bad">{{ L('معطّل', 'Inactive') }}</span>{% endif %}</td>
+  <td data-value="{{ counts.get(u.id, 0) }}"><a href="{{ url_for('admin.forms', owner=u.id) }}">{{ counts.get(u.id, 0) }}</a></td>
+  <td class="small">{{ u.last_login_at|local }}</td>
+  <td class="act"><button type="button" class="sm ghost" data-edit='{{ {"id": u.id, "username": u.username, "name": u.name or "", "email": u.email or "", "role": u.role}|tojson }}'>{{ L('تعديل', 'Edit') }}</button></td>
+</tr>{% endfor %}
+</tbody></table></div></div>
+<form class="card" method="post" id="userForm" autocomplete="off">
+  <h2 id="ufTitle">{{ L('مستخدم جديد', 'New user') }}</h2>
+  <input type="hidden" name="id" id="uid">
+  <label for="uname">{{ L('اسم المستخدم', 'User name') }}</label><input type="text" id="uname" name="username" required dir="ltr" autocomplete="off">
+  <label for="ufull" style="margin-top:8px">{{ L('الاسم', 'Name') }}</label><input type="text" id="ufull" name="name">
+  <label for="umail" style="margin-top:8px">{{ L('البريد', 'Email') }}</label><input type="email" id="umail" name="email" dir="ltr">
+  <label for="urole" style="margin-top:8px">{{ L('الدور', 'Role') }}</label><select id="urole" name="role"><option value="editor">{{ L('محرّر', 'Editor') }}</option><option value="admin">{{ L('مسؤول', 'Administrator') }}</option></select>
+  <label for="upw" style="margin-top:8px">{{ L('كلمة المرور', 'Password') }} <span class="muted small" id="pwNote">({{ L('8 أحرف على الأقل', 'at least 8 characters') }})</span></label>
+  <input type="password" id="upw" name="password" autocomplete="new-password" minlength="8">
+  <div class="row-actions" style="margin-top:12px"><button type="submit">{{ L('حفظ', 'Save') }}</button><button type="reset" class="ghost" id="ufReset">{{ L('جديد', 'New') }}</button></div>
+</form>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+  const u = JSON.parse(b.dataset.edit);
+  document.getElementById('uid').value = u.id; document.getElementById('uname').value = u.username;
+  document.getElementById('ufull').value = u.name; document.getElementById('umail').value = u.email; document.getElementById('urole').value = u.role;
+  document.getElementById('ufTitle').textContent = {{ L('تعديل المستخدم', 'Edit user')|tojson }} + ': ' + u.username;
+  document.getElementById('pwNote').textContent = {{ L('(اتركها فارغة لتبقى كما هي)', '(leave empty to keep it)')|tojson }};
+  document.getElementById('userForm').scrollIntoView({ behavior: 'smooth' });
+}));
+document.getElementById('ufReset').addEventListener('click', () => { document.getElementById('uid').value = ''; document.getElementById('ufTitle').textContent = {{ L('مستخدم جديد', 'New user')|tojson }}; });
+</script>{% endblock %}
