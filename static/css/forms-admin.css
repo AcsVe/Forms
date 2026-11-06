@@ -314,3 +314,16 @@ a.chip:hover{text-decoration:none;background:#d6e6fd}
 .th-none{background:linear-gradient(135deg,#eef3fb,#dbe7f7)}
 .th-card{position:absolute;inset:14% 30%;background:rgba(255,255,255,.88);border-radius:5px}
 .th-name{font-weight:700;font-size:.88rem}
+
+/* «خلفياتي» */
+.th-sub{margin:18px 0 4px;font-size:1rem}
+.th-wrap{position:relative;display:flex}
+.th-wrap .theme{flex:1;min-width:0}
+.th-wrap .th-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr}
+.th-img video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.th-vid{position:absolute;inset-inline-start:8px;bottom:8px;color:#fff;text-shadow:0 1px 3px #000;z-index:1}
+.theme-grid .th-add{display:flex;flex-direction:column;gap:6px;padding:6px;border:2px dashed #cbd5e1;border-radius:14px;background:#fff;cursor:pointer;text-align:center;color:var(--navy,#0f2a52)}
+.theme-grid .th-add:hover,.theme-grid .th-add:focus-visible{border-color:var(--primary,#0C67EC);outline:none}
+.th-add .th-img{display:grid;place-items:center;background:#f1f5f9;font-size:1.6rem;color:#64748b}
+.th-add .th-name{font-weight:700;font-size:.88rem}
+.theme-grid .th-del{position:absolute;top:10px;inset-inline-end:10px;min-height:0;width:32px;height:32px;padding:0;border-radius:9px;background:#fff;color:#b91c1c;border:1px solid #fecaca;box-shadow:0 1px 4px rgba(0,0,0,.15);z-index:2}

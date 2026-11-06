@@ -11,7 +11,7 @@
 | المستودع | `AcsVe/Forms` |
 | التقنية | Flask + Waitress (`serve.py`)، واجهة SAS (`templates/admin/base.html`، `static/css/admin.css` + `forms-admin.css`) |
 | القاعدة | SQLite `dataorms.db` (والملفات المرفوعة داخلها في `media_files`) |
-| الاختبار | `python -m pytest -q tests/` (36 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` و`python tests/ui_audit.py` (Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً؛ لا يقرآن `.env` الحقيقي: `FORMS_NO_DOTENV=1`) |
+| الاختبار | `python -m pytest -q tests/` (38 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` و`python tests/ui_audit.py` (Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً؛ لا يقرآن `.env` الحقيقي: `FORMS_NO_DOTENV=1`) |
 | الدليل | `docs/Forms.md` |
 
 - **ترحيل القاعدة:** `models.py: MIGRATIONS` — كل عمود جديد يُضاف إلى القائمة (جدول، عمود، تعريف SQL) فيُضاف عند الإقلاع دون مسح بيانات. أول مدير يُنشأ من `ADMIN_USER`/`ADMIN_PASS` في `.env` عند أول تشغيل، والقوالب الجاهزة مرة واحدة (`seed_templates.py`).
@@ -22,7 +22,7 @@
 - **الدخول بحساب Microsoft** للنماذج المحمية: `msauth.py` (التفويض مع PKCE، والبريد من Graph `/me` لا من الرمز)، والمسارات `/f/<slug>/login/microsoft` و`/auth/ms/callback`؛ يلزم عنوان إعادة التوجيه وصلاحيات User.Read في تسجيل التطبيق (التفاصيل في الدليل). لا تُطبع قيم `MS_*` في أي رسالة.
 - **دخول الإدارة بنمط القاعات:** اسم المستخدم أو البريد، و«تذكرني»، و«نسيت كلمة المرور» (`password_resets`، صالح ساعة ولمرة واحدة)، و`users.session_ver` يُخرج الجلسات القديمة عند تغيير كلمة المرور، وعشر محاولات خاطئة توقف الدخول 15 دقيقة.
 - **الشعار ومعاينة الرابط:** `templates/public/_brand.html` (شعار النموذج أو الجهة أعلى كل صفحة عامة) ووسوم `og:`/`twitter:` في `public/_base.html`، والصورة من `share.py` (`/f/<slug>/share.jpg`). روابط الملفات في الإعدادات (`MEDIA_KEYS` في `blueprints/admin.py`) تُقبل فقط ملفاً في النظام أو رابط http(s).
-- **معرض الخلفيات:** `themes.py` (القائمة والألوان والخلفية الافتراضية للنماذج الجديدة) و`tools_themes.py` يولّد `static/themes/*.svg`؛ الرسوم في الشريطين الجانبيين حتى لا تغطيها البطاقة. خلفية جديدة = مدخل في `THEMES` ودالة رسم في `compose` ثم تشغيل المولّد.
+- **معرض الخلفيات:** `themes.py` (القائمة والألوان والخلفية الافتراضية للنماذج الجديدة) و`tools_themes.py` يولّد `static/themes/*.svg`؛ الرسوم في الشريطين الجانبيين حتى لا تغطيها البطاقة. خلفية جديدة = مدخل في `THEMES` ودالة رسم في `compose` ثم تشغيل المولّد. «خلفياتي» ملفات `media_files` بالنوعين `background`/`bgvideo` دون `form_id` (`GALLERY_KINDS` في `blueprints/admin.py`)، وحذفها محمي إن استخدمها نموذج.
 - **رمز QR** في `qr.py` (segno على الخادم، تصحيح H، شعار الجهة واسمها وعنوان النموذج)، وPNG يُرسم في المتصفح من ملف SVG نفسه؛ لا خدمة خارجية.
 - **كل جدول** `<table data-table>` يأخذ من `static/js/table.js`: رأساً ثابتاً، وبحثاً عاماً، وتصفية لكل عمود، وترتيباً، وتصديراً إلى Excel؛ ومع `_bulk.html` التحديد المتعدد والإجراءات الجماعية. أي قائمة جديدة تستخدمهما.
 - **المستهدفون والدعوات:** `people.py` (الجداول `people` و`groups` و`person_groups` و`invitations`)، ومساراته على `admin_bp`. الدعوة رابط شخصي `?inv=` يُسجَّل فتحه وإجابته (`people.mark_response`)، وخيار `audience_only` يقصر النموذج على المدعوين.

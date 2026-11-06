@@ -22,8 +22,10 @@ from schema import GROUPS, NO_ANSWER, TYPES, answer_text, grade, normalize_schem
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 _LOGIN_FAILS = defaultdict(list)
-MEDIA_LIMITS = {'image': 8, 'audio': 20, 'video': 50, 'logo': 4}
-MEDIA_TYPES = {'image': ('image/',), 'logo': ('image/',), 'audio': ('audio/',), 'video': ('video/',)}
+MEDIA_LIMITS = {'image': 8, 'audio': 20, 'video': 50, 'logo': 4, 'background': 8, 'bgvideo': 50}
+MEDIA_TYPES = {'image': ('image/',), 'logo': ('image/',), 'audio': ('audio/',), 'video': ('video/',),
+               'background': ('image/',), 'bgvideo': ('video/',)}
+GALLERY_KINDS = ('background', 'bgvideo')   # «خلفياتي»: خلفيات مرفوعة إلى المعرض لكل النماذج
 
 
 @admin_bp.app_context_processor
@@ -401,7 +403,7 @@ def _clean_settings(s):
         elif k == 'logo_size':
             out[k] = v if v in ('sm', 'lg') else ''
         elif k == 'logo_align':
-            out[k] = v if v == 'center' else ''
+            out[k] = v if v in ('center', 'right', 'left') else ''
         elif k in ('redirect_url',):
             out[k] = v if isinstance(v, str) and re.match(r'^https?://', v) else ''
         elif isinstance(v, (bool, int, float)) or v is None:
@@ -430,7 +432,8 @@ def builder(fid):
     import msauth
     return render_template('admin/builder.html', f=f, data=_form_json(f), others=others, media=media, cats=cats,
                            mail_ready=graph_status()['ready'], ms_ready=msauth.ready(), n_responses=f.response_count,
-                           public_url=_public_url(f), themes=themes.gallery(session.get('lang', 'ar')))
+                           public_url=_public_url(f), themes=themes.gallery(session.get('lang', 'ar')),
+                           my_bgs=my_backgrounds(), is_admin=current_user().is_admin)
 
 
 def _public_url(f, suffix=''):
@@ -492,13 +495,41 @@ def api_media():
         return jsonify({'ok': False, 'error': pick('نوع الملف غير مناسب لهذا الحقل.', 'This file type does not fit this field.')}), 400
     if len(data) > MEDIA_LIMITS[kind] * 1024 * 1024:
         return jsonify({'ok': False, 'error': pick(f'الملف أكبر من {MEDIA_LIMITS[kind]} ميغابايت.', f'The file is larger than {MEDIA_LIMITS[kind]} MB.')}), 400
-    fid = request.form.get('form_id', type=int)
+    fid = None if kind in GALLERY_KINDS else request.form.get('form_id', type=int)
     if fid:
         get_form(fid)
     m = MediaFile(kind=kind, filename=up.filename[:255], mime=mime, size=len(data), data=data, form_id=fid)
     db.session.add(m)
     db.session.commit()
     return jsonify({'ok': True, 'id': m.id, 'url': m.url, 'name': m.filename, 'mime': m.mime, 'kind': kind})
+
+
+def _gallery_uses(url):
+    """عدد النماذج التي تستخدم خلفية من «خلفياتي» (صورةً أو فيديو)."""
+    return sum(1 for (s,) in db.session.query(Form.settings).all()
+               if isinstance(s, dict) and url in (s.get('bg_image'), s.get('bg_video')))
+
+
+def my_backgrounds():
+    rows = (db.session.query(MediaFile.id, MediaFile.key, MediaFile.kind, MediaFile.filename)
+            .filter(MediaFile.kind.in_(GALLERY_KINDS)).order_by(MediaFile.id.desc()).all())
+    return [{'id': i, 'url': f'/media/{i}/{k}', 'name': n or '', 'kind': 'video' if kd == 'bgvideo' else 'image'}
+            for i, k, kd, n in rows]
+
+
+@admin_bp.route('/api/backgrounds/<int:mid>/delete', methods=['POST'])
+@admin_required
+def background_delete(mid):
+    m = db.session.get(MediaFile, mid)
+    if not m or m.kind not in GALLERY_KINDS:
+        return jsonify({'ok': False, 'error': pick('الخلفية غير موجودة.', 'The background was not found.')}), 404
+    n = _gallery_uses(m.url)
+    if n:
+        return jsonify({'ok': False, 'error': pick(f'لا يمكن حذف هذه الخلفية لأن {n} من النماذج تستخدمها؛ غيّر خلفيتها أولاً.',
+                                                    f'This background cannot be deleted because {n} form(s) use it; change their background first.')}), 409
+    db.session.delete(m)
+    db.session.commit()
+    return jsonify({'ok': True})
 
 
 @admin_bp.route('/forms/<int:fid>/qr.svg')
