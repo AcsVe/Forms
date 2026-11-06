@@ -8,7 +8,7 @@
 | العنوان | https://9.iajaward.org |
 | المنفذ | `8009` |
 | المجلد على كمبيوتر المدرسة | `C:\Forms` |
-| المستودع | `AcsVe/Forms` (لم يُنشأ على GitHub بعد) |
+| المستودع | `AcsVe/Forms` |
 | التقنية | Flask + Waitress (`serve.py`)، واجهة SAS (`templates/admin/base.html`، `static/css/admin.css` + `forms-admin.css`) |
 | القاعدة | SQLite `dataorms.db` (والملفات المرفوعة داخلها في `media_files`) |
 | الاختبار | `python -m pytest -q tests/` (30 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` و`python tests/ui_audit.py` (Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً؛ لا يقرآن `.env` الحقيقي: `FORMS_NO_DOTENV=1`) |
