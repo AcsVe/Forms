@@ -150,6 +150,25 @@
       <div><label>{{ L('مستوى صوت الموسيقى', 'Music volume') }}</label><input type="range" min="5" max="100" step="5" data-s="music_volume"></div>
       <p class="note">{{ L('أقصى حجم: الصورة 8 ميغابايت، والصوت 20، والفيديو 50. تُحفظ الملفات داخل النظام وتشملها النسخ الاحتياطية.', 'Largest size: image 8 MB, audio 20, video 50. Files are kept inside the system and included in backups.') }}</p>
     </div>
+    <div class="card"><h2>{{ L('الشعار أعلى النموذج', 'Logo at the top of the form') }}</h2>
+      <p class="note">{{ L('يظهر شعار الجهة واسمها (من الإعدادات ← هوية الجهة) أعلى النموذج وصفحة الشكر تلقائياً، ويمكن وضع شعار خاص بهذا النموذج.', 'The organisation logo and name (Settings → Identity) appear at the top of the form and the thank-you page automatically; you can set a logo for this form only.') }}</p>
+      {{ tog('logo_hide', 'إخفاء الشعار واسم الجهة', 'Hide the logo and organisation name') }}
+      {{ tog('org_name_hide', 'إظهار الشعار دون اسم الجهة', 'Show the logo without the organisation name') }}
+      <div class="form-grid">
+        <div><label>{{ L('حجم الشعار', 'Logo size') }}</label><select data-s="logo_size"><option value="sm">{{ L('صغير', 'Small') }}</option><option value="">{{ L('متوسط', 'Medium') }}</option><option value="lg">{{ L('كبير', 'Large') }}</option></select></div>
+        <div><label>{{ L('موضع الشعار', 'Logo position') }}</label><select data-s="logo_align"><option value="">{{ L('بداية السطر', 'Start of the line') }}</option><option value="center">{{ L('في الوسط', 'Centre') }}</option></select></div>
+      </div>
+      {{ media_field('logo', 'image', 'شعار خاص بهذا النموذج (اختياري، بدلاً من شعار الجهة)', 'A logo for this form only (optional, instead of the organisation logo)', 'image/*') }}
+    </div>
+    <div class="card"><h2>{{ L('معاينة الرابط عند مشاركته', 'Link preview when shared') }}</h2>
+      <p class="note">{{ L('عند إرسال رابط النموذج في واتساب أو تيمز أو البريد أو وسائل التواصل يظهر عنوان النموذج ووصفه وصورة. الصورة بالترتيب: صورة المعاينة أدناه، ثم صورة الترويسة، ثم صورة الخلفية، وإلا بطاقة بلون النموذج وشعاره. المقاس الأنسب 1200×630.', 'When the form link is sent on WhatsApp, Teams, email or social media, the title, description and an image appear. The image, in order: the preview image below, then the header image, then the background image, otherwise a card in the form colour with its logo. Best size: 1200×630.') }}</p>
+      {{ media_field('share_image', 'image', 'صورة معاينة الرابط (اختيارية)', 'Link preview image (optional)', 'image/*') }}
+      <div class="share-card" id="shareCard" aria-label="{{ L('شكل الرابط عند مشاركته', 'How the shared link looks') }}">
+        <img id="sharePrev" alt="">
+        <div class="share-txt"><small dir="ltr" id="shareHost"></small><b id="shareTitle"></b><span id="shareDesc"></span></div>
+      </div>
+      <p class="note">{{ L('تحفظ تطبيقات المراسلة المعاينة عند أول إرسال للرابط؛ إن غيّرت الصورة بعد ذلك فقد تبقى القديمة ظاهرة فيها مدةً.', 'Messaging apps keep the preview from the first time the link is sent; if you change the image later, the old one may stay for a while.') }}</p>
+    </div>
   </div>
 </section>
 
@@ -253,7 +272,7 @@
 window.FORM = {{ data|tojson }};
 window.B = {
   saveUrl: {{ url_for('admin.api_form', fid=f.id)|tojson }}, mediaUrl: {{ url_for('admin.api_media')|tojson }},
-  publicUrl: {{ public_url|tojson }}, types: {{ TYPES|tojson }}, nResponses: {{ n_responses }},
+  publicUrl: {{ public_url|tojson }}, shareImg: {{ url_for('public.share_jpg', slug=f.slug)|tojson }}, types: {{ TYPES|tojson }}, nResponses: {{ n_responses }},
 };
 </script>
 <script src="{{ asset('js/builder.js') }}"></script>

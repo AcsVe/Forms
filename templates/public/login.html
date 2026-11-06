@@ -3,6 +3,7 @@
 <div class="f-card gate">
   {% if f.s('header_image') %}<img class="f-banner" src="{{ f.s('header_image') }}" alt="">{% endif %}
   <div class="f-head-in">
+    {% include 'public/_brand.html' %}
   <h1>{{ f.title_for(lang) }}</h1>
   <p class="muted"><i class="fa-solid fa-envelope-circle-check"></i> {{ L('هذا النموذج يتطلب التحقق من بريدك الإلكتروني أولاً.', 'This form needs you to confirm your email first.') }}</p>
   {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="f-alert {{ cat }}">{{ m }}</div>{% endfor %}{% endwith %}

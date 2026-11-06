@@ -365,8 +365,9 @@ SETTING_KEYS = {
     'filler_fields', 'filler_intro', 'quiz', 'show_score', 'show_answers', 'pass_mark', 'confirmation', 'confirmation_en',
     'redirect_url', 'allow_another', 'open_at', 'close_at', 'max_responses', 'closed_message', 'notify_emails',
     'send_copy', 'autosave', 'time_limit', 'card_style', 'music_volume', 'question_numbers', 'welcome', 'welcome_en',
-    'show_subforms', 'login_method',
+    'show_subforms', 'login_method', 'logo_hide', 'logo_size', 'logo_align', 'org_name_hide', 'share_image',
 }
+MEDIA_KEYS = {'bg_image', 'bg_video', 'bg_music', 'header_image', 'logo', 'share_image'}
 
 
 def _clean_settings(s):
@@ -393,6 +394,13 @@ def _clean_settings(s):
                 out[k] = max(0, int(float(v))) if v not in (None, '') else None
             except (TypeError, ValueError):
                 pass
+        elif k in MEDIA_KEYS:
+            # ملف مرفوع في النظام أو رابط مباشر فقط
+            out[k] = v if isinstance(v, str) and re.match(r'^(https?://|/media/\d+/[\w-]+$)', v) else ''
+        elif k == 'logo_size':
+            out[k] = v if v in ('sm', 'lg') else ''
+        elif k == 'logo_align':
+            out[k] = v if v == 'center' else ''
         elif k in ('redirect_url',):
             out[k] = v if isinstance(v, str) and re.match(r'^https?://', v) else ''
         elif isinstance(v, (bool, int, float)) or v is None:

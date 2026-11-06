@@ -5,6 +5,7 @@
 <div class="f-card f-head">
   {% if f.s('header_image') %}<img class="f-banner" src="{{ f.s('header_image') }}" alt="">{% endif %}
   <div class="f-head-in">
+    {% include 'public/_brand.html' %}
     <h1 id="fTitle">{{ f.title_for(lang) }}</h1>
     {% if f.description %}<p class="f-desc" id="fDesc">{{ f.description }}</p>{% endif %}
     {% if email or (session.get('ff') or {}).get(f.slug) %}
