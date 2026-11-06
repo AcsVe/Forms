@@ -116,6 +116,11 @@ def create_app(test_config=None):
         return {'lang': lang, 'L': L, 'dir': 'ltr' if lang == 'en' else 'rtl'}
 
     @app.context_processor
+    def inject_themes():
+        import themes
+        return {'theme_light': themes.is_light}
+
+    @app.context_processor
     def inject_brand():
         from datetime import datetime
         try:

@@ -11,6 +11,7 @@ from flask import (Blueprint, Response as FlaskResponse, abort, flash, jsonify, 
 
 import analytics
 import exporter
+import themes
 from blueprints.common import (admin_required, can_edit, current_user, filtered_responses, forms_query, get_form,
                                login_required, period_range, response_filters)
 from i18n import pick
@@ -238,8 +239,7 @@ def form_new():
             title = (request.form.get('title') or '').strip() or pick('نموذج بلا عنوان', 'Untitled form')
             f = Form(title=title[:300], owner_id=current_user().id, category=(request.form.get('category') or '').strip()[:120] or None,
                      schema={'questions': normalize_schema({'questions': [{'type': 'short_text', 'title': pick('سؤال بلا عنوان', 'Untitled question')}]})['questions']},
-                     settings={'accent': AppSetting.get('accent') or '#0C67EC', 'progress': True,
-                               'lang': session.get('lang', 'ar')})
+                     settings=dict(themes.settings_for(), progress=True, lang=session.get('lang', 'ar')))
             db.session.add(f)
             db.session.commit()
         return redirect(url_for('admin.builder', fid=f.id))
@@ -259,7 +259,7 @@ def form_import():
         if not p['questions']:
             flash(pick('لم يُعثر على أي سؤال في النص. راجع الصيغة في الأمثلة.', 'No questions were found in the text. Check the format in the examples.'), 'error')
             return render_template('admin/form_import.html', text=text)
-        settings = {'accent': AppSetting.get('accent') or '#0C67EC', 'progress': True, 'lang': session.get('lang', 'ar')}
+        settings = dict(themes.settings_for(), progress=True, lang=session.get('lang', 'ar'))
         if p.get('settings'):
             settings.update({k: v for k, v in p['settings'].items() if k in SETTING_KEYS})
         if any((q.get('quiz') or {}).get('points') for q in p['questions']):
@@ -323,7 +323,8 @@ def form_subform(fid):
     parent = get_form(fid)
     f = Form(title=pick('نموذج فرعي — ', 'Sub-form — ') + parent.title, owner_id=current_user().id, parent_id=parent.id,
              category=parent.category, schema=normalize_schema({'questions': [{'type': 'short_text', 'title': 'Untitled question' if parent.s('lang') == 'en' else 'سؤال بلا عنوان'}]}),
-             settings={'accent': parent.s('accent') or '#0C67EC', 'progress': True, 'lang': parent.s('lang', 'ar')})
+             settings=dict({k: parent.s(k) for k in ('accent', 'bg_color', 'bg_image', 'bg_overlay', 'card_style', 'font', 'header_image', 'logo') if parent.s(k) is not None},
+                           progress=True, lang=parent.s('lang', 'ar')))
     db.session.add(f)
     db.session.commit()
     flash(pick('أُنشئ نموذج فرعي مرتبط بالنموذج الأم.', 'A sub-form linked to the parent form was created.'), 'ok')
@@ -396,7 +397,7 @@ def _clean_settings(s):
                 pass
         elif k in MEDIA_KEYS:
             # ملف مرفوع في النظام أو رابط مباشر فقط
-            out[k] = v if isinstance(v, str) and re.match(r'^(https?://|/media/\d+/[\w-]+$)', v) else ''
+            out[k] = v if isinstance(v, str) and re.match(r'^(https?://|/media/\d+/[\w-]+$|/static/themes/[a-z]+\.svg$)', v) else ''
         elif k == 'logo_size':
             out[k] = v if v in ('sm', 'lg') else ''
         elif k == 'logo_align':
@@ -429,7 +430,7 @@ def builder(fid):
     import msauth
     return render_template('admin/builder.html', f=f, data=_form_json(f), others=others, media=media, cats=cats,
                            mail_ready=graph_status()['ready'], ms_ready=msauth.ready(), n_responses=f.response_count,
-                           public_url=_public_url(f))
+                           public_url=_public_url(f), themes=themes.gallery(session.get('lang', 'ar')))
 
 
 def _public_url(f, suffix=''):

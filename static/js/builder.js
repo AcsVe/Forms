@@ -115,7 +115,7 @@
     if (key === 'bilingual' || key === 'quiz') renderList();
     if (key === 'bilingual') document.body.classList.toggle('bi', !!S.bilingual);
     if (key === 'bg_overlay') document.getElementById('ovOut').textContent = S.bg_overlay ?? 35;
-    if (key && key.startsWith('bg_') || ['header_image', 'logo', 'share_image'].includes(key)) mediaPreviews();
+    if (key && key.startsWith('bg_') || ['header_image', 'logo', 'share_image'].includes(key)) { mediaPreviews(); markTheme(); }
     if (key === 'title') document.title = F.title;
   }
   document.body.classList.toggle('bi', !!S.bilingual);
@@ -154,7 +154,33 @@
   });
   mediaPreviews();
 
-  // ── معاينة الرابط عند مشاركته (الصورة نفسها التي تقرؤها واتساب وغيرها) ──
+  // ── معرض الخلفيات: اختيار خلفية يضبط الصورة ولون الصفحة واللون الرئيسي ──
+  const themeGrid = document.getElementById('themeGrid');
+  function markTheme() {
+    if (!themeGrid) return;
+    themeGrid.querySelectorAll('.theme').forEach((b) => {
+      const on = b.dataset.url ? S.bg_image === b.dataset.url : !S.bg_image && !S.bg_video;
+      b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+  function setS(key, val) {
+    S[key] = val;
+    document.querySelectorAll(`[data-s="${key}"]`).forEach((el) => {
+      if (el.type === 'checkbox') el.checked = !!val; else el.value = val === undefined || val === null ? '' : val;
+    });
+  }
+  if (themeGrid) {
+    themeGrid.addEventListener('click', (e) => {
+      const b = e.target.closest('.theme'); if (!b) return;
+      setS('bg_image', b.dataset.url); setS('bg_color', b.dataset.bg);
+      if (b.dataset.accent) setS('accent', b.dataset.accent);
+      if (b.dataset.url) { setS('bg_video', ''); setS('bg_overlay', 0); document.getElementById('ovOut').textContent = 0; }
+      mediaPreviews(); markTheme(); dirty();
+    });
+    markTheme();
+  }
+
+  // ── معاينة الرابط عند مشاركته (الصورة نفسها التي تقرؤها تطبيقات المراسلة) ──
   let shareSig = '';
   function sharePreview(afterSave) {
     const img = document.getElementById('sharePrev');
