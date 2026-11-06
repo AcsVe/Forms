@@ -132,6 +132,17 @@
 </section>
 
 <section class="tabpane" data-pane="design" hidden>
+  <div class="card"><h2>{{ L('معرض الخلفيات', 'Background gallery') }}</h2>
+    <p class="note">{{ L('اختر خلفية جاهزة للصفحة؛ يُضبط معها لون الصفحة واللون الرئيسي للأزرار، ويمكن تعديلهما بعد ذلك، أو رفع صورة خاصة من «الخلفية والموسيقى».', 'Pick a ready-made page background; the page colour and the main button colour are set with it and can be changed afterwards, or upload your own image under “Background and music”.') }}</p>
+    <div class="theme-grid" id="themeGrid" role="radiogroup" aria-label="{{ L('معرض الخلفيات', 'Background gallery') }}">
+      {% for t in themes %}
+      <button type="button" class="theme" role="radio" aria-checked="false" data-url="{{ t.url }}" data-bg="{{ t.bg }}" data-accent="{{ t.accent }}">
+        <span class="th-img" style="background-image:url('{{ t.url }}')"><span class="th-card"></span></span><span class="th-name">{{ t.name }}</span></button>
+      {% endfor %}
+      <button type="button" class="theme" role="radio" aria-checked="false" data-url="" data-bg="#eef3fb" data-accent="">
+        <span class="th-img th-none"><span class="th-card"></span></span><span class="th-name">{{ L('بلا صورة', 'No image') }}</span></button>
+    </div>
+  </div>
   <div class="grid2">
     <div class="card"><h2>{{ L('الألوان والخط', 'Colours and font') }}</h2>
       <div class="form-grid">
@@ -161,13 +172,13 @@
       {{ media_field('logo', 'image', 'شعار خاص بهذا النموذج (اختياري، بدلاً من شعار الجهة)', 'A logo for this form only (optional, instead of the organisation logo)', 'image/*') }}
     </div>
     <div class="card"><h2>{{ L('معاينة الرابط عند مشاركته', 'Link preview when shared') }}</h2>
-      <p class="note">{{ L('عند إرسال رابط النموذج في واتساب أو تيمز أو البريد أو وسائل التواصل يظهر عنوان النموذج ووصفه وصورة. الصورة بالترتيب: صورة المعاينة أدناه، ثم صورة الترويسة، ثم صورة الخلفية، وإلا بطاقة بلون النموذج وشعاره. المقاس الأنسب 1200×630.', 'When the form link is sent on WhatsApp, Teams, email or social media, the title, description and an image appear. The image, in order: the preview image below, then the header image, then the background image, otherwise a card in the form colour with its logo. Best size: 1200×630.') }}</p>
+      <p class="note">{{ L('عند إرسال رابط النموذج عبر تطبيقات المراسلة (مثل WhatsApp وMicrosoft Teams) أو البريد الإلكتروني أو وسائل التواصل الاجتماعي، يظهر عنوان النموذج ووصفه وصورة معه. الصورة بالترتيب: صورة المعاينة أدناه، ثم صورة الترويسة، ثم صورة الخلفية، وإلا بطاقة بلون النموذج وشعاره. المقاس الأنسب 1200×630.', 'When the form link is sent on messaging apps (such as WhatsApp and Microsoft Teams), email or social media, the title, description and an image appear. The image, in order: the preview image below, then the header image, then the background image, otherwise a card in the form colour with its logo. Best size: 1200×630.') }}</p>
       {{ media_field('share_image', 'image', 'صورة معاينة الرابط (اختيارية)', 'Link preview image (optional)', 'image/*') }}
       <div class="share-card" id="shareCard" aria-label="{{ L('شكل الرابط عند مشاركته', 'How the shared link looks') }}">
         <img id="sharePrev" alt="">
         <div class="share-txt"><small dir="ltr" id="shareHost"></small><b id="shareTitle"></b><span id="shareDesc"></span></div>
       </div>
-      <p class="note">{{ L('تحفظ تطبيقات المراسلة المعاينة عند أول إرسال للرابط؛ إن غيّرت الصورة بعد ذلك فقد تبقى القديمة ظاهرة فيها مدةً.', 'Messaging apps keep the preview from the first time the link is sent; if you change the image later, the old one may stay for a while.') }}</p>
+      <p class="note">{{ L('تحتفظ تطبيقات المراسلة بالمعاينة منذ أول إرسال للرابط؛ فإن غُيّرت الصورة بعد ذلك فقد تبقى الصورة السابقة ظاهرة فيها بعض الوقت.', 'Messaging apps keep the preview from the first time the link is sent; if you change the image later, the old one may stay for a while.') }}</p>
     </div>
   </div>
 </section>

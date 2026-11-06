@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex">
 {% if f and not brand_is_icon %}<link rel="icon" href="{{ brand_logo_url }}">{% else %}<link rel="icon" href="{{ url_for('static', filename='brand/system.svg') }}" type="image/svg+xml">{% endif %}
 {% if f and not f.is_template %}
-{# معاينة الرابط عند مشاركته (واتساب، تيمز، فيسبوك، X، لينكدإن) #}
+{# معاينة الرابط عند مشاركته في تطبيقات المراسلة ووسائل التواصل الاجتماعي (WhatsApp وMicrosoft Teams وFacebook وX وLinkedIn) #}
 {% set _base = (config.get('BASE_URL') or request.host_url).rstrip('/') %}
 {% set _site = (org_name_en if lang == 'en' else org_name_ar) or L('النماذج والاستبيانات', 'Forms and surveys') %}
 {% set _desc = (f.description or '')|replace('\r', ' ')|replace('\n', ' ')|truncate(200, True, '…') or _site %}
@@ -37,7 +37,7 @@
 <style>:root{--acc:{{ acc }};--bg:{{ s.get('bg_color') or '#eef3fb' }};--ov:{{ ((s.get('bg_overlay') if s.get('bg_overlay') is not none else 35) / 100) }};{% if s.get('font') %}--font:'{{ s.get('font') }}';{% endif %}}</style>
 <title>{% block title %}{{ f.title_for(lang) if f else '' }}{% endblock %}</title>
 </head>
-<body class="pub{{ ' embed' if embed }}{{ ' glass' if s.get('card_style') == 'glass' }}{{ ' flat' if s.get('card_style') == 'flat' }}{{ ' has-bg' if s.get('bg_image') or s.get('bg_video') }}">
+<body class="pub{{ ' embed' if embed }}{{ ' glass' if s.get('card_style') == 'glass' }}{{ ' flat' if s.get('card_style') == 'flat' }}{{ ' has-bg' if s.get('bg_image') or s.get('bg_video') }}{{ ' light-bg' if theme_light(s.get('bg_image')) and not s.get('bg_video') }}">
 {% if not embed %}
 <div class="bg-layer" aria-hidden="true">
   {% if s.get('bg_image') %}<div class="bg-img" style="background-image:url('{{ s.get('bg_image')|e }}')"></div>{% endif %}

@@ -84,3 +84,31 @@ def test_media_settings_accept_only_safe_links(admin, app):
     with app.app_context():
         f = db.session.get(Form, fid)
         assert f.s('logo') == '' and f.s('share_image') == 'https://example.com/a.jpg' and f.s('logo_size') == ''
+
+
+def test_new_form_gets_gallery_background_and_theme_urls_are_kept(admin, app):
+    fid, slug, _ = make_form(admin, app, Q)
+    # make_form يستبدل الإعدادات، فنفحص نموذجاً جديداً من «نموذج جديد» مباشرة
+    r = admin.post('/admin/forms/new', data={'title': 'جديد'})
+    nid = int(r.headers['Location'].rstrip('/').split('/')[-2])
+    with app.app_context():
+        n = db.session.get(Form, nid)
+        assert n.s('bg_image') == '/static/themes/classroom.svg' and n.s('bg_overlay') == 0
+    page = app.test_client().get(f'/f/{n.slug}').data.decode()
+    assert "url('/static/themes/classroom.svg')" in page and 'has-bg' in page
+    assert app.test_client().get('/static/themes/classroom.svg').status_code == 200
+    # خلفية فاتحة: التذييل داكن
+    admin.post(f'/admin/api/forms/{fid}', json={'settings': {'lang': 'ar', 'bg_image': '/static/themes/heritage.svg'}})
+    assert 'light-bg' in app.test_client().get(f'/f/{slug}').data.decode()
+    # مسار خارج مجلد الخلفيات يُرفض
+    admin.post(f'/admin/api/forms/{fid}', json={'settings': {'lang': 'ar', 'bg_image': '/static/../app.py'}})
+    with app.app_context():
+        assert db.session.get(Form, fid).s('bg_image') == ''
+
+
+def test_every_gallery_theme_has_an_image():
+    import os
+    import themes
+    root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'themes')
+    for k in themes.THEMES:
+        assert os.path.getsize(os.path.join(root, f'{k}.svg')) > 1000, k
