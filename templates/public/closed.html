@@ -1,6 +1,7 @@
 {% extends 'public/_base.html' %}
 {% block body %}
 <div class="f-card done-card">
+  {% include 'public/_brand.html' %}
   <div class="done-ico closed"><i class="fa-solid fa-lock"></i></div>
   <h1>{{ f.title_for(lang) }}</h1>
   <p class="done-msg">{{ msg }}</p>

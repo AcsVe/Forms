@@ -7,7 +7,29 @@
 {% set acc = s.get('accent') if s.get('accent') else '#0C67EC' %}
 <meta name="theme-color" content="{{ acc }}">
 <meta name="robots" content="noindex">
-<link rel="icon" href="{{ url_for('static', filename='brand/system.svg') }}" type="image/svg+xml">
+{% if f and not brand_is_icon %}<link rel="icon" href="{{ brand_logo_url }}">{% else %}<link rel="icon" href="{{ url_for('static', filename='brand/system.svg') }}" type="image/svg+xml">{% endif %}
+{% if f and not f.is_template %}
+{# معاينة الرابط عند مشاركته (واتساب، تيمز، فيسبوك، X، لينكدإن) #}
+{% set _base = (config.get('BASE_URL') or request.host_url).rstrip('/') %}
+{% set _site = (org_name_en if lang == 'en' else org_name_ar) or L('النماذج والاستبيانات', 'Forms and surveys') %}
+{% set _desc = (f.description or '')|replace('\r', ' ')|replace('\n', ' ')|truncate(200, True, '…') or _site %}
+<meta name="description" content="{{ _desc }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ _site }}">
+<meta property="og:title" content="{{ f.title_for(lang) }}">
+<meta property="og:description" content="{{ _desc }}">
+<meta property="og:url" content="{{ _base }}/f/{{ f.slug }}">
+<meta property="og:locale" content="{{ 'en_US' if lang == 'en' else 'ar_AR' }}">
+<meta property="og:image" content="{{ _base }}/f/{{ f.slug }}/share.jpg?v={{ f.updated_at.strftime('%Y%m%d%H%M%S') if f.updated_at else '1' }}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ f.title_for(lang) }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ f.title_for(lang) }}">
+<meta name="twitter:description" content="{{ _desc }}">
+<meta name="twitter:image" content="{{ _base }}/f/{{ f.slug }}/share.jpg?v={{ f.updated_at.strftime('%Y%m%d%H%M%S') if f.updated_at else '1' }}">
+{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800{% if s.get('font') == 'Cairo' %}&family=Cairo:wght@400;600;700{% elif s.get('font') == 'Noto Kufi Arabic' %}&family=Noto+Kufi+Arabic:wght@400;600;700{% elif s.get('font') == 'IBM Plex Sans Arabic' %}&family=IBM+Plex+Sans+Arabic:wght@400;500;700{% endif %}&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">

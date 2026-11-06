@@ -362,6 +362,19 @@ def done(slug):
                            preview=request.args.get('preview') == '1')
 
 
+@public_bp.route('/f/<slug>/share.jpg')
+def share_jpg(slug):
+    """صورة معاينة الرابط (og:image) بمقاس 1200×630."""
+    import share
+    f = _form_or_404(slug)
+    data = share.image(f)
+    if data is None:                        # مكتبة الصور غير مثبّتة: أيقونة النظام
+        return redirect(url_for('static', filename='icons/icon-512.png'))
+    resp = FlaskResponse(data, mimetype='image/jpeg')
+    resp.headers['Cache-Control'] = 'public, max-age=600'
+    return resp
+
+
 @public_bp.route('/f/<slug>/qr.svg')
 def qr_svg(slug):
     import qr

@@ -130,7 +130,7 @@ def create_app(test_config=None):
             logo = None
         lang = session.get('lang', 'ar')
         org = (org_en or org_ar) if lang == 'en' else (org_ar or org_en)
-        return {'org_name': org,
+        return {'org_name': org, 'org_name_ar': org_ar or org_en, 'org_name_en': org_en or org_ar,
                 'accent': accent if _re.fullmatch(r'#[0-9A-Fa-f]{6}', accent or '') else '#0C67EC',
                 'brand_logo_url': logo.url if logo else url_for('static', filename='brand/system.svg'),
                 'brand_is_icon': not logo, 'now_year': datetime.now().year}

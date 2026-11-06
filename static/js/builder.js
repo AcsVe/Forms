@@ -79,6 +79,7 @@
       const srv = d.form.schema.questions;
       if (srv.length === Q.length) srv.forEach((q, i) => { if (Q[i].id !== q.id) Q[i].id = q.id; });
       setState('ok', T('محفوظ ✓', 'Saved ✓'));
+      sharePreview(true);
     } catch (e) {
       setState('bad', T('تعذّر الحفظ — ', 'Could not save — ') + (e.message || ''));
     } finally {
@@ -114,7 +115,7 @@
     if (key === 'bilingual' || key === 'quiz') renderList();
     if (key === 'bilingual') document.body.classList.toggle('bi', !!S.bilingual);
     if (key === 'bg_overlay') document.getElementById('ovOut').textContent = S.bg_overlay ?? 35;
-    if (key && key.startsWith('bg_') || key === 'header_image') mediaPreviews();
+    if (key && key.startsWith('bg_') || ['header_image', 'logo', 'share_image'].includes(key)) mediaPreviews();
     if (key === 'title') document.title = F.title;
   }
   document.body.classList.toggle('bi', !!S.bilingual);
@@ -152,6 +153,22 @@
     box.querySelector('[data-clear]').addEventListener('click', () => { S[key] = ''; inp.value = ''; mediaPreviews(); dirty(); });
   });
   mediaPreviews();
+
+  // ── معاينة الرابط عند مشاركته (الصورة نفسها التي تقرؤها واتساب وغيرها) ──
+  let shareSig = '';
+  function sharePreview(afterSave) {
+    const img = document.getElementById('sharePrev');
+    if (!img) return;
+    document.getElementById('shareTitle').textContent = F.title || '';
+    document.getElementById('shareDesc').textContent = (F.description || '').replace(/\s+/g, ' ').slice(0, 160);
+    try { document.getElementById('shareHost').textContent = new URL(B.publicUrl, location.href).host; } catch (e) { /* رابط نسبي */ }
+    // تُعاد الصورة فقط إذا تغيّر ما يؤثر فيها
+    const sig = [S.share_image, S.header_image, S.bg_image, S.logo, S.accent].join('|');
+    if (afterSave && sig === shareSig) return;
+    shareSig = sig;
+    img.src = B.shareImg + '?t=' + Date.now();
+  }
+  sharePreview(false);
 
   // ── بيانات المستجيب ────────────────────────────────────────────────────
   const PRESETS = {

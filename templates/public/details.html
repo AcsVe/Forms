@@ -3,6 +3,7 @@
 <div class="f-card gate">
   {% if f.s('header_image') %}<img class="f-banner" src="{{ f.s('header_image') }}" alt="">{% endif %}
   <div class="f-head-in">
+    {% include 'public/_brand.html' %}
   <h1>{{ f.title_for(lang) }}</h1>
   <p class="muted">{{ f.s('filler_intro') or L('أدخل بياناتك قبل البدء بالأسئلة.', 'Enter your details before the questions.') }}</p>
   {% if email %}<p class="who"><i class="fa-solid fa-user-check"></i> <span dir="ltr">{{ email }}</span></p>{% endif %}

@@ -295,3 +295,11 @@ a.chip:hover{text-decoration:none;background:#d6e6fd}
 .tpl .row-actions>.btn:only-of-type{grid-column:1 / -1}
 .en-term{direction:ltr;unicode-bidi:isolate;font-family:Arial,sans-serif;font-weight:700;background:#eef2f8;border-radius:6px;padding:0 6px;white-space:nowrap}
 .steps ul{margin:6px 0;padding-inline-start:18px}
+
+/* شكل الرابط عند مشاركته */
+.share-card{display:flex;flex-direction:column;max-width:420px;border:1px solid var(--line,#e2e8f0);border-radius:12px;overflow:hidden;background:#f8fafc;margin:6px 0 10px}
+.share-card img{display:block;width:100%;aspect-ratio:1200/630;object-fit:cover;background:#e2e8f0}
+.share-txt{display:flex;flex-direction:column;gap:3px;padding:10px 12px}
+.share-txt small{color:#64748b;font-size:.82rem}
+.share-txt b{font-size:.95rem;color:#0f172a;line-height:1.4}
+.share-txt span{font-size:.85rem;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
