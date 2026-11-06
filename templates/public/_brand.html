@@ -3,7 +3,7 @@
 {% set _logo = f.s('logo') or ('' if brand_is_icon else brand_logo_url) %}
 {% set _org = '' if f.s('org_name_hide') else (org_name_en if lang == 'en' else org_name_ar) %}
 {% if _logo or _org %}
-<div class="f-brand{{ ' center' if f.s('logo_align') == 'center' }} sz-{{ f.s('logo_size') or 'md' }}">
+<div class="f-brand{{ (' ' ~ f.s('logo_align')) if f.s('logo_align') in ('center', 'right', 'left') }} sz-{{ f.s('logo_size') or 'md' }}">
   {% if _logo %}<img src="{{ _logo }}" alt="{{ _org or L('شعار الجهة', 'Logo') }}">{% endif %}
   {% if _org %}<span>{{ _org }}</span>{% endif %}
 </div>

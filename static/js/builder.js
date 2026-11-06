@@ -156,10 +156,12 @@
 
   // ── معرض الخلفيات: اختيار خلفية يضبط الصورة ولون الصفحة واللون الرئيسي ──
   const themeGrid = document.getElementById('themeGrid');
+  const myBgGrid = document.getElementById('myBgGrid');
   function markTheme() {
     if (!themeGrid) return;
-    themeGrid.querySelectorAll('.theme').forEach((b) => {
-      const on = b.dataset.url ? S.bg_image === b.dataset.url : !S.bg_image && !S.bg_video;
+    document.querySelectorAll('#themeGrid .theme, #myBgGrid button.theme').forEach((b) => {
+      const on = b.dataset.kind === 'video' ? S.bg_video === b.dataset.url
+        : b.dataset.url ? S.bg_image === b.dataset.url && !S.bg_video : !S.bg_image && !S.bg_video;
       b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
     });
   }
@@ -178,6 +180,60 @@
       mediaPreviews(); markTheme(); dirty();
     });
     markTheme();
+  }
+  // «خلفياتي»: صورة أو فيديو يُرفع مرة واحدة ويظهر في كل النماذج
+  function pickMine(b) {
+    if (b.dataset.kind === 'video') { setS('bg_video', b.dataset.url); setS('bg_image', ''); }
+    else { setS('bg_image', b.dataset.url); setS('bg_video', ''); }
+    setS('bg_overlay', 0); document.getElementById('ovOut').textContent = 0;
+    mediaPreviews(); markTheme(); dirty();
+  }
+  function myTile(d) {
+    const kind = d.kind === 'bgvideo' ? 'video' : 'image';
+    const img = h('span', { class: 'th-img' }, kind === 'video' ? h('video', { src: d.url + '#t=1', muted: true, preload: 'metadata' }) : null,
+      kind === 'video' ? h('i', { class: 'fa-solid fa-film th-vid' }) : null, h('span', { class: 'th-card' }));
+    if (kind === 'image') img.style.backgroundImage = `url('${d.url}')`;
+    const b = h('button', { type: 'button', class: 'theme', role: 'radio', 'aria-checked': 'false', title: d.name }, img, h('span', { class: 'th-name' }, d.name));
+    b.dataset.kind = kind; b.dataset.url = d.url;
+    const wrap = h('div', { class: 'th-wrap' }, b);
+    wrap.dataset.id = d.id;
+    if (myBgGrid.dataset.admin) {
+      wrap.append(h('button', { type: 'button', class: 'th-del', 'aria-label': T('حذف الخلفية', 'Delete the background'), title: T('حذف الخلفية', 'Delete the background') },
+        h('i', { class: 'fa-solid fa-trash-can' })));
+    }
+    return wrap;
+  }
+  if (myBgGrid) {
+    myBgGrid.addEventListener('click', async (e) => {
+      const del = e.target.closest('.th-del');
+      if (del) {
+        const wrap = del.closest('.th-wrap');
+        if (!confirm(T('حذف هذه الخلفية من المعرض؟', 'Delete this background from the gallery?'))) return;
+        const r = await fetch(myBgGrid.dataset.delUrl.replace(/\/0\/delete$/, `/${wrap.dataset.id}/delete`), { method: 'POST' });
+        const d = await r.json().catch(() => ({}));
+        if (d.ok) wrap.remove(); else alert(d.error || T('تعذّر الحذف.', 'Could not delete.'));
+        return;
+      }
+      const b = e.target.closest('button.theme');
+      if (b) pickMine(b);
+    });
+    const addLbl = myBgGrid.querySelector('.th-add');
+    addLbl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('myBgFile').click(); } });
+    document.getElementById('myBgFile').addEventListener('change', async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      e.target.value = '';
+      const kind = f.type.startsWith('video/') ? 'bgvideo' : 'background';
+      const fd = new FormData();
+      fd.append('file', f); fd.append('kind', kind);
+      setState('wait', T('جارٍ رفع الملف…', 'Uploading…'));
+      const r = await fetch(B.mediaUrl, { method: 'POST', body: fd });
+      const d = await r.json().catch(() => ({ ok: false, error: r.status === 413 ? T('الملف كبير جداً.', 'The file is too large.') : '' }));
+      if (!d.ok) { setState('bad', d.error || T('تعذّر الرفع', 'Upload failed')); alert(d.error || T('تعذّر الرفع', 'Upload failed')); return; }
+      setState('ok', T('رُفع الملف ✓', 'Uploaded ✓'));
+      const tile = myTile({ id: d.id, url: d.url, name: d.name, kind });
+      addLbl.after(tile);
+      pickMine(tile.querySelector('button.theme'));
+    });
   }
 
   // ── معاينة الرابط عند مشاركته (الصورة نفسها التي تقرؤها تطبيقات المراسلة) ──

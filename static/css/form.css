@@ -39,6 +39,9 @@ a{color:var(--acc)}
 .f-brand.sz-sm img{height:36px}.f-brand.sz-sm span{font-size:.88rem}
 .f-brand.sz-lg img{height:80px;max-width:300px}.f-brand.sz-lg span{font-size:1.1rem}
 .f-brand.center{flex-direction:column;justify-content:center;text-align:center;gap:8px}
+.f-brand.right{direction:rtl;justify-content:flex-start}
+.f-brand.left{direction:ltr;justify-content:flex-start}
+.f-brand.right span,.f-brand.left span{unicode-bidi:plaintext}
 .done-card .f-brand{justify-content:center;border-bottom:0;margin-bottom:6px}
 .req-note{font-size:.84rem;color:var(--bad);margin:10px 0 0}
 .who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:.9rem;color:#334155;background:#f1f5fb;border-radius:10px;padding:6px 12px}

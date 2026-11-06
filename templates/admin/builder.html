@@ -142,6 +142,22 @@
       <button type="button" class="theme" role="radio" aria-checked="false" data-url="" data-bg="#eef3fb" data-accent="">
         <span class="th-img th-none"><span class="th-card"></span></span><span class="th-name">{{ L('بلا صورة', 'No image') }}</span></button>
     </div>
+    <h3 class="th-sub">{{ L('خلفياتي', 'My backgrounds') }}</h3>
+    <p class="note">{{ L('صور أو مقاطع فيديو ترفعها مرة واحدة فتظهر هنا في كل النماذج. الفيديو يعمل صامتاً ومتكرراً خلف النموذج. الحد الأعلى: الصورة 8 ميغابايت، والفيديو 50.', 'Images or videos you upload once appear here in every form. A video plays muted and looping behind the form. Largest size: image 8 MB, video 50 MB.') }}</p>
+    <div class="theme-grid" id="myBgGrid" role="radiogroup" aria-label="{{ L('خلفياتي', 'My backgrounds') }}"
+         data-del-url="{{ url_for('admin.background_delete', mid=0) }}" data-admin="{{ '1' if is_admin else '' }}">
+      <label class="theme th-add" tabindex="0"><span class="th-img"><i class="fa-solid fa-plus"></i></span>
+        <span class="th-name">{{ L('إضافة صورة أو فيديو', 'Add an image or video') }}</span>
+        <input type="file" accept="image/*,video/*" id="myBgFile" hidden></label>
+      {% for b in my_bgs %}
+      <div class="th-wrap" data-id="{{ b.id }}">
+        <button type="button" class="theme" role="radio" aria-checked="false" data-kind="{{ b.kind }}" data-url="{{ b.url }}" title="{{ b.name }}">
+          <span class="th-img"{% if b.kind == 'image' %} style="background-image:url('{{ b.url }}')"{% endif %}>{% if b.kind == 'video' %}<video src="{{ b.url }}#t=1" muted preload="metadata"></video><i class="fa-solid fa-film th-vid"></i>{% endif %}<span class="th-card"></span></span>
+          <span class="th-name">{{ b.name }}</span></button>
+        {% if is_admin %}<button type="button" class="th-del" aria-label="{{ L('حذف الخلفية', 'Delete the background') }}" title="{{ L('حذف الخلفية', 'Delete the background') }}"><i class="fa-solid fa-trash-can"></i></button>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
   </div>
   <div class="grid2">
     <div class="card"><h2>{{ L('الألوان والخط', 'Colours and font') }}</h2>
@@ -167,7 +183,7 @@
       {{ tog('org_name_hide', 'إظهار الشعار دون اسم الجهة', 'Show the logo without the organisation name') }}
       <div class="form-grid">
         <div><label>{{ L('حجم الشعار', 'Logo size') }}</label><select data-s="logo_size"><option value="sm">{{ L('صغير', 'Small') }}</option><option value="">{{ L('متوسط', 'Medium') }}</option><option value="lg">{{ L('كبير', 'Large') }}</option></select></div>
-        <div><label>{{ L('موضع الشعار', 'Logo position') }}</label><select data-s="logo_align"><option value="">{{ L('بداية السطر', 'Start of the line') }}</option><option value="center">{{ L('في الوسط', 'Centre') }}</option></select></div>
+        <div><label>{{ L('موضع الشعار', 'Logo position') }}</label><select data-s="logo_align"><option value="">{{ L('تلقائي (بداية السطر حسب لغة النموذج)', 'Automatic (start of the line for the form language)') }}</option><option value="right">{{ L('يمين', 'Right') }}</option><option value="center">{{ L('وسط', 'Centre') }}</option><option value="left">{{ L('يسار', 'Left') }}</option></select></div>
       </div>
       {{ media_field('logo', 'image', 'شعار خاص بهذا النموذج (اختياري، بدلاً من شعار الجهة)', 'A logo for this form only (optional, instead of the organisation logo)', 'image/*') }}
     </div>

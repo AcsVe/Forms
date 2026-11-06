@@ -112,3 +112,33 @@ def test_every_gallery_theme_has_an_image():
     root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'themes')
     for k in themes.THEMES:
         assert os.path.getsize(os.path.join(root, f'{k}.svg')) > 1000, k
+
+
+def test_logo_positions(admin, app):
+    _set_org_logo(app, _png(60, 60))
+    fid, slug, _ = make_form(admin, app, Q)
+    c = app.test_client()
+    for pos in ('right', 'center', 'left'):
+        admin.post(f'/admin/api/forms/{fid}', json={'settings': {'lang': 'ar', 'logo_align': pos}})
+        assert f'class="f-brand {pos} sz-md"' in c.get(f'/f/{slug}').data.decode()
+
+
+def test_my_backgrounds_shared_and_protected_delete(admin, app):
+    r = admin.post('/admin/api/media', data={'file': (io.BytesIO(_png(400, 200)), 'school.png', 'image/png'), 'kind': 'background'},
+                   content_type='multipart/form-data')
+    img = r.json
+    r = admin.post('/admin/api/media', data={'file': (io.BytesIO(b'\x00\x00\x00\x18ftypmp42'), 'intro.mp4', 'video/mp4'), 'kind': 'bgvideo'},
+                   content_type='multipart/form-data')
+    vid = r.json
+    assert img['ok'] and vid['ok']
+    # تظهر في معرض كل النماذج
+    f1, s1, _ = make_form(admin, app, Q)
+    f2, s2, _ = make_form(admin, app, Q, settings={'bg_video': vid['url']})
+    page = admin.get(f'/admin/forms/{f1}/edit').data.decode()
+    assert img['url'] in page and vid['url'] in page and 'school.png' in page
+    assert f'src="{vid["url"]}"' in app.test_client().get(f'/f/{s2}').data.decode()
+    # الحذف المحمي: الفيديو مستخدم في نموذج فلا يُحذف، والصورة غير المستخدمة تُحذف
+    r = admin.post(f'/admin/api/backgrounds/{vid["id"]}/delete')
+    assert r.status_code == 409 and not r.json['ok']
+    assert admin.post(f'/admin/api/backgrounds/{img["id"]}/delete').json['ok']
+    assert img['url'] not in admin.get(f'/admin/forms/{f1}/edit').data.decode()
