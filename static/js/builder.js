@@ -6,6 +6,37 @@
   const S = F.settings = F.settings || {};
   const Q = F.schema.questions;
   const TYPES = B.types;
+  // محتوى النموذج يتبع لغة النموذج نفسه (S.lang)، لا لغة واجهة الإدارة (T)
+  const FL = (ar, en) => (S.lang === 'en' ? en : ar);
+  const FDIR = () => (S.lang === 'en' ? 'ltr' : 'rtl');
+  // النصوص الافتراضية بلغتين: تُحوَّل إلى لغة النموذج إن كانت بغيرها (نموذج قديم أو بعد تغيير اللغة)
+  const DEF_TITLES = [['سؤال بلا عنوان', 'Untitled question'], ['قسم جديد', 'New section'], ['المصدر', 'Source']];
+  const DEF_NUMBERED = [['الخيار ', 'Option '], ['العنصر ', 'Item '], ['العبارة ', 'Statement '], ['العمود ', 'Column ']];
+  const DEF_LIKERT = [['أعارض بشدة', 'Strongly disagree'], ['أعارض', 'Disagree'], ['محايد', 'Neutral'], ['أوافق', 'Agree'], ['أوافق بشدة', 'Strongly agree']];
+  const DEF_YESNO = [['نعم', 'Yes'], ['لا', 'No']];
+  const DEF_NPS = [['غير محتمل إطلاقاً', 'Not at all likely'], ['محتمل جداً', 'Extremely likely']];
+  function toFormLang(s, pairs) {
+    if (typeof s !== 'string') return s;
+    const en = S.lang === 'en';
+    for (const [a, e] of pairs) if (s === (en ? a : e)) return en ? e : a;
+    for (const [a, e] of DEF_NUMBERED) {
+      const from = en ? a : e;
+      if (s.startsWith(from) && /^\d+$/.test(s.slice(from.length))) return (en ? e : a) + s.slice(from.length);
+    }
+    return s;
+  }
+  function fixDefaults() {
+    let changed = false;
+    const fix = (o, k, pairs) => { const v = toFormLang(o[k], pairs || []); if (v !== o[k]) { o[k] = v; changed = true; } };
+    Q.forEach((q) => {
+      fix(q, 'title', DEF_TITLES);
+      if (q.type === 'nps') { fix(q, 'min_label', DEF_NPS); fix(q, 'max_label', DEF_NPS); }
+      (q.choices || []).forEach((o) => fix(o, 'label', q.type === 'yesno' ? DEF_YESNO : []));
+      (q.rows || []).forEach((o) => fix(o, 'label'));
+      (q.cols || []).forEach((o) => fix(o, 'label', q.type === 'likert' ? DEF_LIKERT : []));
+    });
+    return changed;
+  }
   let open = null;            // معرّف السؤال المفتوح للتعديل
   const uid = (p) => p + '_' + Math.random().toString(16).slice(2, 10);
 
@@ -79,6 +110,7 @@
     const w = document.getElementById('shareWarn'); if (w) w.hidden = F.status === 'open';
   });
   function onSettingChange(key) {
+    if (key === 'lang') { fixDefaults(); renderList(); }
     if (key === 'bilingual' || key === 'quiz') renderList();
     if (key === 'bilingual') document.body.classList.toggle('bi', !!S.bilingual);
     if (key === 'bg_overlay') document.getElementById('ovOut').textContent = S.bg_overlay ?? 35;
@@ -160,23 +192,23 @@
 
   // ── إضافة سؤال ─────────────────────────────────────────────────────────
   function newQuestion(type) {
-    const q = { id: uid(type === 'section' ? 's' : 'q'), type, title: type === 'section' ? T('قسم جديد', 'New section') : (type === 'statement' ? '' : T('سؤال بلا عنوان', 'Untitled question')) };
-    if (isChoice(type) && type !== 'yesno') q.choices = [1, 2, 3].map((n) => ({ id: uid('c'), label: T('الخيار ', 'Option ') + n }));
-    if (type === 'yesno') q.choices = [{ id: 'yes', label: 'نعم', label_en: 'Yes' }, { id: 'no', label: 'لا', label_en: 'No' }];
-    if (type === 'ranking' || type === 'constant_sum') q.choices = [1, 2, 3].map((n) => ({ id: uid('c'), label: T('العنصر ', 'Item ') + n }));
+    const q = { id: uid(type === 'section' ? 's' : 'q'), type, title: type === 'section' ? FL('قسم جديد', 'New section') : (type === 'statement' ? '' : FL('سؤال بلا عنوان', 'Untitled question')) };
+    if (isChoice(type) && type !== 'yesno') q.choices = [1, 2, 3].map((n) => ({ id: uid('c'), label: FL('الخيار ', 'Option ') + n }));
+    if (type === 'yesno') q.choices = DEF_YESNO.map(([a, e], j) => ({ id: j ? 'no' : 'yes', label: FL(a, e), label_en: e }));
+    if (type === 'ranking' || type === 'constant_sum') q.choices = [1, 2, 3].map((n) => ({ id: uid('c'), label: FL('العنصر ', 'Item ') + n }));
     if (type === 'constant_sum') q.total = 100;
     if (isMatrix(type)) {
-      q.rows = [1, 2].map((n) => ({ id: uid('r'), label: T('العبارة ', 'Statement ') + n }));
+      q.rows = [1, 2].map((n) => ({ id: uid('r'), label: FL('العبارة ', 'Statement ') + n }));
       q.cols = type === 'likert'
-        ? [['أعارض بشدة', 'Strongly disagree'], ['أعارض', 'Disagree'], ['محايد', 'Neutral'], ['أوافق', 'Agree'], ['أوافق بشدة', 'Strongly agree']].map(([a, e]) => ({ id: uid('k'), label: a, label_en: e }))
-        : [1, 2, 3].map((n) => ({ id: uid('k'), label: T('العمود ', 'Column ') + n }));
+        ? DEF_LIKERT.map(([a, e]) => ({ id: uid('k'), label: FL(a, e), label_en: e }))
+        : [1, 2, 3].map((n) => ({ id: uid('k'), label: FL('العمود ', 'Column ') + n }));
     }
     if (type === 'scale') Object.assign(q, { min: 1, max: 5 });
     if (type === 'rating') Object.assign(q, { max: 5, icon: 'star' });
-    if (type === 'nps') Object.assign(q, { min: 0, max: 10, min_label: 'غير محتمل إطلاقاً', max_label: 'محتمل جداً' });
+    if (type === 'nps') Object.assign(q, { min: 0, max: 10, min_label: FL(...DEF_NPS[0]), max_label: FL(...DEF_NPS[1]) });
     if (type === 'slider') Object.assign(q, { min: 0, max: 100, step: 1 });
     if (type === 'file') Object.assign(q, { max_files: 1, max_mb: 10, accept: 'any' });
-    if (type === 'hidden') Object.assign(q, { title: T('المصدر', 'Source'), param: 'ref' });
+    if (type === 'hidden') Object.assign(q, { title: FL('المصدر', 'Source'), param: 'ref' });
     if (S.quiz && !noAnswer(type)) q.quiz = { points: 1, correct: [] };
     return q;
   }
@@ -295,7 +327,7 @@
   function txt(q, key, ph, opts) {
     opts = opts || {};
     const tag = opts.area ? 'textarea' : 'input';
-    return h(tag, Object.assign({ type: opts.type || 'text', value: q[key] ?? '', placeholder: ph || '', rows: opts.area ? 2 : null, dir: opts.ltr ? 'ltr' : null,
+    return h(tag, Object.assign({ type: opts.type || 'text', value: q[key] ?? '', placeholder: ph || '', rows: opts.area ? 2 : null, dir: opts.ltr ? 'ltr' : (opts.type === 'number' ? null : FDIR()),
       class: opts.cls || null,
       oninput: (e) => { const v = e.target.value; q[key] = opts.type === 'number' ? (v === '' ? undefined : Number(v)) : v; dirty(); if (opts.rerenderHead) updateHead(q); } }, opts.attrs || {}));
   }
@@ -396,7 +428,7 @@
     items.forEach((o, j) => {
       const row = h('div', { class: 'opt-row' },
         h('span', { class: 'opt-mark' }, icon(key === 'rows' ? 'fa-grip-lines' : key === 'cols' ? 'fa-grip-lines-vertical' : multi ? 'fa-square' : q.type === 'ranking' ? 'fa-hashtag' : 'fa-circle')),
-        h('input', { type: 'text', value: o.label, 'aria-label': label, oninput: (e) => { o.label = e.target.value; dirty(); },
+        h('input', { type: 'text', value: o.label, dir: FDIR(), 'aria-label': label, oninput: (e) => { o.label = e.target.value; dirty(); },
           onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); addOpt(j + 1); } } }),
         h('input', { type: 'text', value: o.label_en || '', class: 'bi-only', dir: 'ltr', placeholder: 'English', 'aria-label': 'English', oninput: (e) => { o.label_en = e.target.value; dirty(); } }));
       if (q.type === 'image_choice' && key === 'choices') {
@@ -554,6 +586,8 @@
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(txt);
   });
 
+  const fixedOnLoad = fixDefaults();
   renderList();
   setState('ok', T('محفوظ ✓', 'Saved ✓'));
+  if (fixedOnLoad) dirty();   // نص افتراضي بغير لغة النموذج حُوِّل إلى لغته: يُحفظ تلقائياً
 })();

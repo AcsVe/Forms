@@ -322,7 +322,7 @@ def form_save_template(fid):
 def form_subform(fid):
     parent = get_form(fid)
     f = Form(title=pick('نموذج فرعي — ', 'Sub-form — ') + parent.title, owner_id=current_user().id, parent_id=parent.id,
-             category=parent.category, schema=normalize_schema({'questions': [{'type': 'short_text', 'title': pick('سؤال بلا عنوان', 'Untitled question')}]}),
+             category=parent.category, schema=normalize_schema({'questions': [{'type': 'short_text', 'title': 'Untitled question' if parent.s('lang') == 'en' else 'سؤال بلا عنوان'}]}),
              settings={'accent': parent.s('accent') or '#0C67EC', 'progress': True, 'lang': parent.s('lang', 'ar')})
     db.session.add(f)
     db.session.commit()
