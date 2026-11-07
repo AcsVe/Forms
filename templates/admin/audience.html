@@ -1,7 +1,7 @@
 {% extends 'admin/base.html' %}
 {% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
 {% from 'admin/_macros.html' import form_tabs, kpi with context %}
-{% block title %}{{ L('المدعوون', 'Invited') }} — {{ f.title }}{% endblock %}
+{% block title %}{{ L('المدعوون', 'Invited') }} — {{ f.title_for(lang) }}{% endblock %}
 {% block content %}
 <div class="page-head"><h1>{{ f.title_for(lang) }}</h1>
   <div class="actions"><a class="btn ghost" href="{{ url_for('admin.audience_links', fid=f.id) }}"><i class="fa-solid fa-file-excel"></i> {{ L('الروابط الشخصية (Excel)', 'Personal links (Excel)') }}</a>
@@ -30,7 +30,7 @@
     <th>{{ L('آخر إرسال', 'Last sent') }}</th><th>{{ L('وقت الإجابة', 'Answered at') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
   {% for i in invs %}<tr data-row>
     <td class="chk">{{ bulk_item('invitations', i.id) }}</td>
-    <td><b>{{ i.person.name }}</b>{% if i.person.groups %}<div class="muted small">{{ i.person.groups|map(attribute='name')|join('، ') }}</div>{% endif %}</td>
+    <td><b dir="auto">{{ i.person.name }}</b>{% if i.person.groups %}<div class="muted small" dir="auto">{{ i.person.groups|map(attribute='name')|join('، ') }}</div>{% endif %}</td>
     <td dir="ltr" class="ltr-cell">{{ i.person.email }}</td>
     {% set labels = {'responded': (L('أجاب', 'Answered'), 'ok'), 'opened': (L('فتح ولم يُرسل', 'Opened'), 'warn'), 'sent': (L('أُرسلت الدعوة', 'Invited'), ''), 'pending': (L('لم تُرسل بعد', 'Not sent yet'), ''), 'failed': (L('تعذّر الإرسال', 'Failed'), 'bad')} %}
     <td><span class="badge {{ labels[i.status][1] }}">{{ labels[i.status][0] }}</span></td>

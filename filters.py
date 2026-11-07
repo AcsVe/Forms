@@ -36,7 +36,17 @@ def device_label(key):
     return e if session.get('lang', 'ar') == 'en' else a
 
 
+# قيم عربية يحفظها uaparse في القاعدة؛ تُعرض بلغة الواجهة
+UA_WORDS = {'أخرى': 'Other', 'غير معروف': 'Unknown'}
+
+
+def ua_label(v):
+    v = v or ''
+    return UA_WORDS.get(v, v) if session.get('lang', 'ar') == 'en' else v
+
+
 def install(app):
+    app.jinja_env.filters['ua'] = ua_label
     app.jinja_env.filters['local'] = local
     app.jinja_env.filters['localdate'] = lambda dt: local(dt, '%Y-%m-%d')
     app.jinja_env.filters['dur'] = duration

@@ -84,7 +84,11 @@ AUDIT_JS = r"""() => {
     return { l: 0.2126 * r + 0.7152 * g + 0.0722 * b, a: m.length > 3 ? Number(m[3]) : 1 }; };
   const bgOf = (el) => { while (el) { const s = getComputedStyle(el); const b = s.backgroundColor; const L = lum(b);
       if (s.backgroundImage !== 'none') return null; if (L && L.a > 0.9) return L.l; el = el.parentElement; } return 1; };
-  const out = { contrast: [], small: [], spill: [] };
+  const out = { contrast: [], small: [], spill: [], bidi: [] };
+  // اتجاه النص: نص عربي البداية في عنصر من اليسار لليمين (أو إنجليزي البداية في عنصر من اليمين) ومعه أرقام أو علامات
+  // يظهر مقلوباً («صف ابنكم .1»). يحدث حين يُعرض محتوى بلغة داخل واجهة باللغة الأخرى دون dir مناسب.
+  const AR = /[\u0600-\u06FF]/, LA = /[A-Za-z]/, NEUTRAL = /[0-9٠-٩.:*?؟()\-–—%/]/;
+  const firstStrong = (t) => { for (const ch of t) { if (AR.test(ch)) return 'rtl'; if (LA.test(ch)) return 'ltr'; } return null; };
   const seen = new Set();
   document.querySelectorAll('body *').forEach((el) => {
     if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return;
@@ -99,6 +103,15 @@ AUDIT_JS = r"""() => {
       const ratio = (Math.max(fg.l, bg) + 0.05) / (Math.min(fg.l, bg) + 0.05);
       const large = fs >= 24 || (fs >= 18.6 && fw >= 700);
       if (ratio < (large ? 3 : 4.5)) { const k = 'c' + txt; if (!seen.has(k)) { seen.add(k); out.contrast.push(`${ratio.toFixed(2)} «${txt}» ${el.tagName}.${el.className}`.slice(0, 140)); } }
+    }
+    // النص المعزول بـ bdi أو dir أو unicode-bidi: plaintext يأخذ اتجاهه بنفسه فلا يُحسب على العنصر الأب
+    const isolated = (n) => n.nodeType === 1 && (n.tagName === 'BDI' || n.hasAttribute('dir') || getComputedStyle(n).unicodeBidi === 'plaintext');
+    const textOf = (n) => n.nodeType === 3 ? n.textContent : (isolated(n) ? ' ' : [...n.childNodes].map(textOf).join(''));
+    const full = s.unicodeBidi === 'plaintext' ? '' : [...el.childNodes].map(textOf).join('').replace(/\s+/g, ' ').trim();
+    const want = firstStrong(full);
+    if (want && want !== s.direction && NEUTRAL.test(full) && (AR.test(full) && LA.test(full) || want === 'rtl' ? true : /^[^A-Za-z]|[^A-Za-z0-9]$/.test(full))
+        && !el.closest('code,pre,kbd,[dir=ltr] [dir=ltr],input,textarea')) {
+      const k = 'd' + full.slice(0, 40); if (!seen.has(k)) { seen.add(k); out.bidi.push(`${s.direction} «${full.slice(0, 50)}» ${el.tagName}.${el.className}`.slice(0, 140)); }
     }
     if (fs < 13 && !el.closest('.dt-sort,.chip small,.words small,sup')) { const k = 's' + txt; if (!seen.has(k)) { seen.add(k); out.small.push(`${fs}px «${txt}» ${el.tagName}.${el.className}`.slice(0, 120)); } }
   });
@@ -158,7 +171,7 @@ for vp_name, lang, u, res, errs in report:
     issues = []
     if res['overflow'] > 2:
         issues.append(f"horizontal overflow {res['overflow']}px")
-    issues += ['contrast ' + x for x in res['contrast']] + ['small ' + x for x in res['small']] + ['spill ' + x for x in res['spill']]
+    issues += ['contrast ' + x for x in res['contrast']] + ['small ' + x for x in res['small']] + ['spill ' + x for x in res['spill']] + ['direction ' + x for x in res['bidi']]
     issues += ['JS ' + e for e in errs]
     if issues:
         bad += len(issues)

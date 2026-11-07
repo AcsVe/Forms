@@ -25,7 +25,7 @@
   <td>{{ forms[r.form_id].title_for(lang) }}</td>
   <td class="small nowrap">{{ r.submitted_at|local }}</td>
   <td>{{ r.who }}{% if r.flagged %} <span class="badge bad">{{ L('تكرار محتمل', 'Possible duplicate') }}</span>{% endif %}</td>
-  <td>{{ r.device|device }}</td><td>{{ r.browser or '' }}</td><td>{{ r.os or '' }}</td>
+  <td>{{ r.device|device }}</td><td>{{ r.browser|ua }}</td><td>{{ r.os|ua }}</td>
   <td class="mono small">{{ r.ip or '' }}</td><td data-value="{{ r.duration_sec or 0 }}">{{ r.duration_sec|dur }}</td>
 </tr>{% endfor %}
 </tbody></table></div>

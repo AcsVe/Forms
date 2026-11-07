@@ -298,7 +298,8 @@ def summary(responses, days=30, lang='ar'):
         'pass_rate': None,
         'devices': [{'key': k, 'label': DEVICE_LABELS.get(k, (k, k))[1 if lang == 'en' else 0], 'n': v, 'pct': _pct(v, n)}
                     for k, v in dev.most_common()],
-        'browsers': [{'label': k, 'n': v, 'pct': _pct(v, n)} for k, v in Counter(r.browser or '—' for r in responses).most_common(8)],
+        'browsers': [{'label': k, 'title': ({'أخرى': 'Other', 'غير معروف': 'Unknown'}.get(k, k) if lang == 'en' else k), 'n': v, 'pct': _pct(v, n)}
+                     for k, v in Counter(r.browser or '—' for r in responses).most_common(8)],
         'oses': [{'label': k, 'n': v, 'pct': _pct(v, n)} for k, v in Counter(r.os or '—' for r in responses).most_common(8)],
         'trend': trend,
         'hours': [{'label': f'{h:02d}', 'n': hours.get(h, 0)} for h in range(24)],

@@ -24,7 +24,7 @@
       {% elif q.type != 'statement' %}
       {% set d = detail.get(q.id) %}
       <div class="card ans-card{{ ' ok' if d and d[2] }}{{ ' bad' if d and d[2] == false }}">
-        <div class="ans-q">{{ qtitle(q, lang) }}<span class="badge">{{ L(TYPES[q.type][0], TYPES[q.type][1]) }}</span></div>
+        <div class="ans-q"><bdi>{{ qtitle(q, lang) }}</bdi><span class="badge">{{ L(TYPES[q.type][0], TYPES[q.type][1]) }}</span></div>
         {% set v = (r.answers or {}).get(q.id) %}
         {% if q.type in ['file', 'signature'] and v %}
           <div class="files">{% for fl in v %}
@@ -61,8 +61,8 @@
     <div class="card"><h2>{{ L('الجهاز والمتصفح', 'Device and browser') }}</h2>
       <dl class="meta">
         <dt>{{ L('الجهاز', 'Device') }}</dt><dd>{{ r.device|device }}</dd>
-        <dt>{{ L('المتصفح', 'Browser') }}</dt><dd>{{ r.browser }} {{ (r.meta or {}).get('browser_version', '') }}</dd>
-        <dt>{{ L('نظام التشغيل', 'Operating system') }}</dt><dd>{{ r.os }}</dd>
+        <dt>{{ L('المتصفح', 'Browser') }}</dt><dd>{{ r.browser|ua }} {{ (r.meta or {}).get('browser_version', '') }}</dd>
+        <dt>{{ L('نظام التشغيل', 'Operating system') }}</dt><dd>{{ r.os|ua }}</dd>
         <dt>{{ L('عنوان الشبكة', 'Network address') }}</dt><dd class="mono">{{ r.ip }}</dd>
         {% for k, ar, en in [('screen', 'الشاشة', 'Screen'), ('viewport', 'نافذة المتصفح', 'Window'), ('tz', 'المنطقة الزمنية', 'Time zone'), ('lang', 'لغة المتصفح', 'Browser language'), ('referrer', 'جاء من', 'Came from'), ('source', 'المصدر', 'Source')] if (r.meta or {}).get(k) %}
         <dt>{{ L(ar, en) }}</dt><dd dir="ltr">{{ r.meta[k] }}</dd>{% endfor %}

@@ -10,7 +10,7 @@
   </div>
   <div class="pick-list" id="pick">
     {% for f in all_forms %}<label class="pick-item" data-row data-cat="{{ f.category or '' }}" data-q="{{ (f.title ~ ' ' ~ (f.category or ''))|lower }}">
-      <input type="checkbox" name="ids" value="{{ f.id }}"{{ ' checked' if f.id in ids }}> <span>{{ f.title_for(lang) }} <span class="muted small">{{ f.category or '' }} · {{ f.response_count }}</span></span></label>{% endfor %}
+      <input type="checkbox" name="ids" value="{{ f.id }}"{{ ' checked' if f.id in ids }}> <span><bdi>{{ f.title_for(lang) }}</bdi> <span class="muted small"><bdi>{{ f.category or '' }}</bdi> · {{ f.response_count }}</span></span></label>{% endfor %}
   </div>
   <div class="row" style="margin-top:12px">
     <div><label for="by">{{ L('معيار التجميع', 'Group by') }}</label><select id="by" name="by">
