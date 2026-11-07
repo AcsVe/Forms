@@ -13,6 +13,7 @@
 | القاعدة | SQLite `dataorms.db` (والملفات المرفوعة داخلها في `media_files`) |
 | الاختبار | `python -m pytest -q tests/` (38 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` و`python tests/ui_audit.py` (Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً؛ لا يقرآن `.env` الحقيقي: `FORMS_NO_DOTENV=1`) |
 | الدليل | `docs/Forms.md` |
+| الفحص الآلي | `.github/workflows/checks.yml`: الاختبارات وتجربة المتصفح وفحص المظهر مع كل رفع إلى `main` (Python 3.10)؛ الفشل يصل بريداً |
 
 - **ترحيل القاعدة:** `models.py: MIGRATIONS` — كل عمود جديد يُضاف إلى القائمة (جدول، عمود، تعريف SQL) فيُضاف عند الإقلاع دون مسح بيانات. أول مدير يُنشأ من `ADMIN_USER`/`ADMIN_PASS` في `.env` عند أول تشغيل، والقوالب الجاهزة مرة واحدة (`seed_templates.py`).
 - **بنية النموذج** كاملة في `forms.schema` (JSON): لكل سؤال معرّف نصي ثابت تُربط به الإجابات (`responses.answers`). المنطق (شروط الإظهار والتفرّع والتحقق والتصحيح) في `schema.py`، ونسخته في المتصفح `static/js/fill.js: walk()` — **أي تعديل في أحدهما يُطبَّق في الآخر**، والخادم يعيد التحقق دائماً ولا يحفظ إجابات الأسئلة المخفية.

@@ -1,0 +1,39 @@
+# الفحص الآلي مع كل رفع: الاختبارات، ثم تجربة المتصفح، ثم فحص المظهر (التباين، الخط الصغير، الخروج عن الشاشة،
+# اتجاه النص، أخطاء JavaScript) بالعربية والإنجليزية على الحاسوب والهاتف. يُشغَّل على Python 3.10 لأن كمبيوتر
+# المدرسة أقدم من 3.12؛ وإن فشل وصل إشعار بالبريد إلى صاحب المستودع.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORMS_NO_DOTENV: '1'
+      E2E_CHANNEL: chromium
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+      - name: Install
+        run: |
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+      - name: Tests
+        run: python -m pytest -q tests/
+      - name: Browser run-through
+        run: python tests/e2e_browser.py
+      - name: UI audit
+        run: python tests/ui_audit.py
