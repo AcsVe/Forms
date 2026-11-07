@@ -25,7 +25,7 @@ for ext in ('', '-wal', '-shm'):
         os.remove(DB + ext)
 PORT = 5097
 BASE = f'http://127.0.0.1:{PORT}'
-os.environ.update(FORMS_DB_PATH=DB, DATA_DIR=OUT, PYTHONUTF8='1', FORMS_NO_DOTENV='1')
+os.environ.update(FORMS_DB_PATH=DB, DATA_DIR=OUT, PYTHONUTF8='1', FORMS_NO_DOTENV='1', FORMS_NO_GEO_DOWNLOAD='1')
 for _k in ('MS_TENANT_ID', 'MS_CLIENT_ID', 'MS_CLIENT_SECRET', 'MS_SENDER_EMAIL'):
     os.environ.pop(_k, None)
 os.environ.pop('DATABASE_URL', None)

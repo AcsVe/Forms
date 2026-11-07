@@ -730,7 +730,8 @@ def export(fid, fmt):
         data = json.dumps({'form': _form_json(f), 'responses': [
             {'id': r.id, 'submitted_at': exporter.local(r.submitted_at), 'email': r.email, 'filler': r.filler,
              'answers': r.answers, 'score': r.score, 'max_score': r.max_score, 'device': r.device, 'browser': r.browser,
-             'os': r.os, 'os_version': (r.meta or {}).get('os_version', ''), 'model': (r.meta or {}).get('model', ''), 'ip': r.ip, 'duration_sec': r.duration_sec} for r in rs]}, ensure_ascii=False, indent=1).encode('utf-8')
+             'os': r.os, 'os_version': (r.meta or {}).get('os_version', ''), 'model': (r.meta or {}).get('model', ''), 'ip': r.ip,
+             'region': (r.meta or {}).get('region', ''), 'duration_sec': r.duration_sec} for r in rs]}, ensure_ascii=False, indent=1).encode('utf-8')
         mime = 'application/json'
     elif fmt == 'form':     # بنية النموذج فقط — تُستورد في أي نظام نماذج آخر من صفحة اللصق
         data = json.dumps({'title': f.title, 'title_en': f.title_en, 'description': f.description,

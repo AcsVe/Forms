@@ -12,6 +12,7 @@ from flask import (Blueprint, Response as FlaskResponse, abort, current_app, fla
                    render_template, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import geo
 import uaparse
 from blueprints.common import can_edit, current_user
 from models import EmailCode, Form, Invitation, MediaFile, Person, Response, db
@@ -267,6 +268,9 @@ def submit(slug):
         meta['model'] = dev_model
     if os_ver:
         meta['os_version'] = os_ver
+    place = geo.lookup(_ip())                   # المنطقة التقريبية من عنوان الشبكة (قاعدة محلية)
+    if place:
+        meta['region'], meta['region_ar'], meta['country_code'] = place['en'], place.get('ar', ''), place.get('cc', '')
     st = session.pop(f'st_{f.slug}', None)
     now = datetime.utcnow()
     dur = int(time.time() - st) if st else None

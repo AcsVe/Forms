@@ -30,6 +30,8 @@ def main():
     from app import create_app
     from waitress import serve
     app = create_app()
+    import geo
+    geo.start_updater()                       # قاعدة المنطقة التقريبية: تُحمَّل في الخلفية عند الحاجة
     port = int(os.environ.get('PORT') or 8009)
     log.info('FORMS running on http://localhost:%s  (site: %s, db: %s)', port,
              os.environ.get('BASE_URL') or '-', os.environ.get('FORMS_DB_PATH'))

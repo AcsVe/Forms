@@ -2,6 +2,7 @@
 import csv
 import io
 
+import geo
 from analytics import question_stats, summary
 from schema import MATRIX_TYPES, NO_ANSWER, answer_text, qtitle
 
@@ -49,6 +50,7 @@ def columns(form, lang='ar'):
              (L('المتصفح', 'Browser'), lambda r: r.browser or ''),
              (L('النظام', 'OS'), lambda r: ' '.join(x for x in (r.os or '', (r.meta or {}).get('os_version', '')) if x)),
              (L('عنوان الشبكة', 'Network address'), lambda r: r.ip or ''),
+             (L('المنطقة التقريبية', 'Approximate region'), lambda r: geo.text(r.meta, lang)),
              (L('اللغة', 'Language'), lambda r: r.lang or ''),
              (L('الشاشة', 'Screen'), lambda r: (r.meta or {}).get('screen', '')),
              (L('المنطقة الزمنية', 'Time zone'), lambda r: (r.meta or {}).get('tz', '')),

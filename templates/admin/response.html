@@ -65,6 +65,8 @@
         <dt>{{ L('المتصفح', 'Browser') }}</dt><dd>{{ r.browser|ua }} {{ (r.meta or {}).get('browser_version', '') }}</dd>
         <dt>{{ L('نظام التشغيل', 'Operating system') }}</dt><dd>{{ r.os|ua }} {{ (r.meta or {}).get('os_version', '') }}</dd>
         <dt>{{ L('عنوان الشبكة', 'Network address') }}</dt><dd class="mono">{{ r.ip }}</dd>
+        {% if (r.meta or {}).get('region') %}<dt>{{ L('المنطقة التقريبية', 'Approximate region') }}</dt><dd>{{ (r.meta.region_ar if lang == 'ar' else '') or r.meta.region }}
+          <span class="muted small">({{ L('من عنوان الشبكة، بواسطة', 'from the network address, by') }} <a href="https://db-ip.com" target="_blank" rel="noopener" dir="ltr">DB-IP</a>)</span></dd>{% endif %}
         {% for k, ar, en in [('screen', 'الشاشة', 'Screen'), ('viewport', 'نافذة المتصفح', 'Window'), ('tz', 'المنطقة الزمنية', 'Time zone'), ('lang', 'لغة المتصفح', 'Browser language'), ('referrer', 'جاء من', 'Came from'), ('source', 'المصدر', 'Source')] if (r.meta or {}).get(k) %}
         <dt>{{ L(ar, en) }}</dt><dd dir="ltr">{{ r.meta[k] }}</dd>{% endfor %}
       </dl>

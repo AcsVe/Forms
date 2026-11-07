@@ -7,3 +7,4 @@ requests>=2.32
 segno>=1.6
 Pillow>=10.0
 tzdata
+maxminddb>=2.6
