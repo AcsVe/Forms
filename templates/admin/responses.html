@@ -1,7 +1,7 @@
 {% extends 'admin/base.html' %}
 {% from 'admin/_bulk.html' import bulk_bar, bulk_all, bulk_item with context %}
 {% from 'admin/_macros.html' import form_tabs with context %}
-{% block title %}{{ L('الإجابات', 'Responses') }} — {{ f.title }}{% endblock %}
+{% block title %}{{ L('الإجابات', 'Responses') }} — {{ f.title_for(lang) }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <h1>{{ f.title_for(lang) }}</h1>
@@ -22,7 +22,7 @@
   <th data-sort="num">#</th>
   <th data-filter="text">{{ L('الوقت', 'Time') }}</th>
   <th data-filter="text">{{ L('المستجيب', 'Respondent') }}</th>
-  {% for q in cols %}<th data-filter="{{ 'select' if q.type in ['single', 'dropdown', 'yesno', 'scale', 'rating', 'nps', 'image_choice'] else 'text' }}">{{ qtitle(q, lang)[:40] }}</th>{% endfor %}
+  {% for q in cols %}<th data-filter="{{ 'select' if q.type in ['single', 'dropdown', 'yesno', 'scale', 'rating', 'nps', 'image_choice'] else 'text' }}"><bdi>{{ qtitle(q, lang)[:40] }}</bdi></th>{% endfor %}
   {% if f.s('quiz') %}<th data-sort="num">{{ L('الدرجة %', 'Score %') }}</th>{% endif %}
   <th data-filter="select">{{ L('الجهاز', 'Device') }}</th>
   <th data-filter="select">{{ L('المتصفح', 'Browser') }}</th>
@@ -35,10 +35,10 @@
   <td data-value="{{ r.id }}"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.id }}</a></td>
   <td class="small nowrap"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.submitted_at|local }}</a></td>
   <td>{{ r.who }}{% if r.email and r.who != r.email %}<div class="muted small" dir="ltr">{{ r.email }}</div>{% endif %}</td>
-  {% for q in cols %}<td class="ans">{{ answer_text(q, r.answers or {}, lang)[:120] }}</td>{% endfor %}
+  {% for q in cols %}<td class="ans" dir="auto">{{ answer_text(q, r.answers or {}, lang)[:120] }}</td>{% endfor %}
   {% if f.s('quiz') %}<td data-value="{{ r.percent if r.percent is not none else '' }}">{{ r.percent if r.percent is not none else '—' }}</td>{% endif %}
   <td>{{ r.device|device }}</td>
-  <td>{{ r.browser or '' }}</td>
+  <td>{{ r.browser|ua }}</td>
   <td data-value="{{ r.duration_sec or 0 }}">{{ r.duration_sec|dur }}</td>
   <td>{% if r.starred %}<span class="badge warn" title="{{ L('مميزة', 'Starred') }}">★</span>{% endif %}{% if r.flagged %}<span class="badge bad">{{ L('تكرار محتمل', 'Possible duplicate') }}</span>{% endif %}{% if r.is_test %}<span class="badge">{{ L('معاينة', 'Preview') }}</span>{% endif %}{% if r.parent_response_id %}<span class="badge">↳ #{{ r.parent_response_id }}</span>{% endif %}</td>
 </tr>

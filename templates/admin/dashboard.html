@@ -43,7 +43,7 @@
     {% else %}<p class="muted">{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>{% endif %}</div>
   <div class="card"><h2>{{ L('المتصفحات', 'Browsers') }}</h2>
     {{ chart('bar', sm.browsers|map(attribute='label')|list, [{'label': L('الإجابات', 'Responses'), 'data': sm.browsers|map(attribute='n')|list}], 220, {'indexAxis': 'y'}) }}
-    <p class="note">{% for b in sm.browsers %}<a href="{{ url_for('admin.all_responses', browser=b.label) }}">{{ b.label }}: {{ b.n }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p></div>
+    <p class="note">{% for b in sm.browsers %}<a href="{{ url_for('admin.all_responses', browser=b.label) }}">{{ b.title }}: {{ b.n }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p></div>
   <div class="card"><h2>{{ L('ساعات الإجابة (توقيت عمّان)', 'Answer hours (Amman time)') }}</h2>
     {{ chart('bar', sm.hours|map(attribute='label')|list, [{'label': L('الإجابات', 'Responses'), 'data': sm.hours|map(attribute='n')|list}], 220) }}</div>
 </div>
@@ -64,7 +64,7 @@
     </tbody></table></div></div>
   <div class="card"><h2>{{ L('أحدث الإجابات', 'Latest responses') }}</h2>
     {% if recent %}<ul class="list-links">{% for r in recent %}<li><a href="{{ url_for('admin.response_view', rid=r.id) }}"><b>{{ fmap[r.form_id].title_for(lang) if r.form_id in fmap else '' }}</b>
-      <span class="muted small">— {{ r.submitted_at|local }} · {{ r.device|device }} · {{ r.browser }}{% if r.who %} · {{ r.who }}{% endif %}</span></a></li>{% endfor %}</ul>
+      <span class="muted small">— {{ r.submitted_at|local }} · {{ r.device|device }} · {{ r.browser|ua }}{% if r.who %} · <bdi>{{ r.who }}</bdi>{% endif %}</span></a></li>{% endfor %}</ul>
     {% else %}<p class="muted">{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>{% endif %}</div>
 </div>
 {% endblock %}

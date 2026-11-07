@@ -94,7 +94,7 @@
         <div><label>{{ L('التصنيف', 'Category') }}</label><input type="text" data-f="category" list="catList" maxlength="120">
           <datalist id="catList">{% for c in cats %}<option value="{{ c }}">{% endfor %}</datalist></div>
         <div><label>{{ L('النموذج الأم (للنماذج الفرعية)', 'Parent form (for sub-forms)') }}</label>
-          <select data-f="parent_id"><option value="">{{ L('— لا يوجد —', '— none —') }}</option>{% for o in others %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></div>
+          <select data-f="parent_id"><option value="">{{ L('— لا يوجد —', '— none —') }}</option>{% for o in others %}<option value="{{ o.id }}">{{ o.title_for(lang) }}</option>{% endfor %}</select></div>
       </div>
       {{ tog('bilingual', 'نموذج بلغتين (عربي وإنجليزي) مع زر تبديل اللغة للمستجيب', 'Two languages (Arabic and English) with a language switch for respondents', 'تظهر حقول الإنجليزية لكل سؤال وخيار.', 'English fields appear for every question and option.') }}
       {{ tog('progress', 'شريط التقدم', 'Progress bar') }}
@@ -288,7 +288,7 @@
     <p class="note">{{ L('النموذج الفرعي نموذج مستقل مرتبط بهذا النموذج. تظهر روابطه في صفحة الشكر (إن فُعّل ذلك في الإعدادات)، وتُربط إجابته بإجابة النموذج الأم فتظهران معاً.', 'A sub-form is a separate form linked to this one. Its links appear on the thank-you page (if enabled in Settings), and its response is linked to the parent response so both show together.') }}</p>
     {% if f.parent %}<p>{{ L('هذا النموذج فرعي من:', 'This form is a sub-form of:') }} <a href="{{ url_for('admin.builder', fid=f.parent.id) }}">{{ f.parent.title }}</a></p>{% endif %}
     {% set kids = f.children.all() %}
-    {% if kids %}<ul class="list-links">{% for c in kids %}<li><a href="{{ url_for('admin.builder', fid=c.id) }}">{{ c.title }}</a> <span class="muted small">— {{ c.response_count }} {{ L('إجابة', 'responses') }}</span></li>{% endfor %}</ul>
+    {% if kids %}<ul class="list-links">{% for c in kids %}<li><a href="{{ url_for('admin.builder', fid=c.id) }}"><bdi>{{ c.title_for(lang) }}</bdi></a> <span class="muted small">— {{ c.response_count }} {{ L('إجابة', 'responses') }}</span></li>{% endfor %}</ul>
     {% else %}<p class="muted">{{ L('لا توجد نماذج فرعية.', 'No sub-forms.') }}</p>{% endif %}
     <form method="post" action="{{ url_for('admin.form_subform', fid=f.id) }}"><button type="submit"><i class="fa-solid fa-plus"></i> {{ L('إنشاء نموذج فرعي', 'Create a sub-form') }}</button></form>
   </div>

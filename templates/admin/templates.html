@@ -15,7 +15,7 @@
   <span class="card-sel">{{ bulk_item('templates', t.id) }}</span>
   <div class="tpl-top" style="--k:{{ t.s('accent') or accent }}"><i class="fa-solid {{ 'fa-graduation-cap' if t.s('quiz') else 'fa-file-lines' }}"></i></div>
   <h3>{{ t.title_for(lang) }}</h3>
-  <p class="muted small">{{ t.category or '' }} · {{ t.questions|rejectattr('type', 'in', ['section', 'statement'])|list|length }} {{ L('سؤالاً', 'questions') }}</p>
+  <p class="muted small"><bdi>{{ t.category or '' }}</bdi> · {{ t.questions|rejectattr('type', 'in', ['section', 'statement'])|list|length }} {{ L('سؤالاً', 'questions') }}</p>
   <div class="row-actions">
     <form method="post" action="{{ url_for('admin.form_new') }}"><input type="hidden" name="template_id" value="{{ t.id }}">
       <button class="sm" type="submit"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ L('استخدم القالب', 'Use template') }}</button></form>

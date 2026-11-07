@@ -242,6 +242,7 @@
     const img = document.getElementById('sharePrev');
     if (!img) return;
     document.getElementById('shareTitle').textContent = F.title || '';
+    document.getElementById('shareDesc').dir = 'auto'; document.getElementById('shareTitle').dir = 'auto';
     document.getElementById('shareDesc').textContent = (F.description || '').replace(/\s+/g, ' ').slice(0, 160);
     try { document.getElementById('shareHost').textContent = new URL(B.publicUrl, location.href).host; } catch (e) { /* رابط نسبي */ }
     // تُعاد الصورة فقط إذا تغيّر ما يؤثر فيها
@@ -370,13 +371,14 @@
     h('span', { class: 'drag', title: T('اسحب لتغيير الترتيب', 'Drag to reorder'), 'aria-hidden': 'true' }, icon('fa-grip-vertical')),
     h('span', { class: 'q-ico' }, icon(TYPES[q.type] ? TYPES[q.type][3] : 'fa-question')),
     h('div', { class: 'q-sum' },
-      h('div', { class: 'q-t' }, sec ? T(`الصفحة ${nums[q.id].page}: `, `Page ${nums[q.id].page}: `) : (nums[q.id] && nums[q.id].n ? nums[q.id].n + '. ' : ''),
-        q.title || h('span', { class: 'muted' }, T('بلا عنوان', 'Untitled')), q.required ? h('span', { class: 'req' }, ' *') : null),
+      // عنوان السؤال محتوى النموذج: اتجاهه ولغة بادئته من لغة النموذج لا من لغة واجهة الإدارة
+      h('div', { class: 'q-t', dir: FDIR() }, sec ? FL(`الصفحة ${nums[q.id].page}: `, `Page ${nums[q.id].page}: `) : (nums[q.id] && nums[q.id].n ? nums[q.id].n + '. ' : ''),
+        q.title || h('span', { class: 'muted' }, FL('بلا عنوان', 'Untitled')), q.required ? h('span', { class: 'req' }, ' *') : null),
       h('div', { class: 'q-meta' }, h('span', { class: 'badge' }, typeName(q.type)),
         q.logic && q.logic.show_if ? h('span', { class: 'badge warn' }, icon('fa-code-branch'), ' ', T('شرط إظهار', 'Display rule')) : null,
         (q.choices || []).some((c) => c.goto) || q.next ? h('span', { class: 'badge warn' }, icon('fa-route'), ' ', T('تفرّع', 'Branching')) : null,
         S.quiz && q.quiz && q.quiz.points ? h('span', { class: 'badge violet' }, q.quiz.points + T(' درجة', ' pts')) : null,
-        h('span', { class: 'muted small ellip' }, summary(q)))),
+        h('span', { class: 'muted small ellip', dir: 'auto' }, summary(q)))),
     h('div', { class: 'q-tools' },
       h('button', { type: 'button', class: 'icon-btn', title: T('أعلى', 'Up'), 'aria-label': T('تحريك للأعلى', 'Move up'), disabled: i === 0, onclick: () => move(i, -1) }, icon('fa-arrow-up')),
       h('button', { type: 'button', class: 'icon-btn', title: T('أسفل', 'Down'), 'aria-label': T('تحريك للأسفل', 'Move down'), disabled: i === Q.length - 1, onclick: () => move(i, 1) }, icon('fa-arrow-down')),

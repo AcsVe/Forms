@@ -1,6 +1,6 @@
 {% extends 'admin/base.html' %}
 {% from 'admin/_macros.html' import form_tabs, chart, kpi with context %}
-{% block title %}{{ L('التحليل', 'Analysis') }} — {{ f.title }}{% endblock %}
+{% block title %}{{ L('التحليل', 'Analysis') }} — {{ f.title_for(lang) }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <h1>{{ f.title_for(lang) }}</h1>
@@ -41,7 +41,7 @@
 <h2 class="sec-title">{{ L('تحليل كل سؤال', 'Question by question') }}</h2>
 {% for st in stats %}
 <div class="card qstat" id="s-{{ st.id }}">
-  <div class="qs-head"><h3>{{ loop.index }}. {{ st.title }}</h3>
+  <div class="qs-head"><h3 dir="auto">{{ loop.index }}. {{ st.title }}</h3>
     <span class="muted small">{{ L('أجاب', 'Answered') }} {{ st.n }}{% if st.skipped %} · {{ L('تخطّى', 'Skipped') }} {{ st.skipped }}{% endif %}{% if st.correct_pct is defined %} · <b class="ok-text">{{ L('صحيحة', 'Correct') }} {{ st.correct_pct }}%</b>{% endif %}</span></div>
   {% if st.n == 0 %}<p class="muted">{{ L('لا إجابات على هذا السؤال.', 'No answers to this question.') }}</p>
   {% elif st.kind == 'choice' %}
@@ -52,7 +52,7 @@
         <td><div class="pbar"><span style="width:{{ it.pct }}%"></span></div>{{ it.pct }}%</td></tr>{% endfor %}</tbody></table>
     </div>
     {% if st.multi %}<p class="note">{{ L('النسبة من عدد من أجابوا؛ يمكن اختيار أكثر من خيار.', 'Percent of those who answered; more than one option can be chosen.') }}</p>{% endif %}
-    {% if st.others %}<details><summary>{{ L('إجابات «أخرى»', '"Other" answers') }} ({{ st.others|length }})</summary><ul class="txt-list">{% for o in st.others %}<li>{{ o }}</li>{% endfor %}</ul></details>{% endif %}
+    {% if st.others %}<details><summary>{{ L('إجابات «أخرى»', '"Other" answers') }} ({{ st.others|length }})</summary><ul class="txt-list">{% for o in st.others %}<li dir="auto">{{ o }}</li>{% endfor %}</ul></details>{% endif %}
   {% elif st.kind == 'numeric' %}
     <div class="stat-row"><div><b>{{ st.mean }}</b><small>{{ L('المتوسط', 'Mean') }}</small></div><div><b>{{ st.median }}</b><small>{{ L('الوسيط', 'Median') }}</small></div>
       <div><b dir="ltr">{{ st.min }} – {{ st.max }}</b><small>{{ L('المدى', 'Range') }}</small></div><div><b>{{ st.sd }}</b><small>{{ L('الانحراف المعياري', 'Std. deviation') }}</small></div>
@@ -74,9 +74,9 @@
   {% elif st.kind == 'files' %}
     <p>{{ st.count }} {{ L('ملفاً', 'file(s)') }}</p><div class="files">{% for r, fl in st.files %}<a class="btn sm ghost" href="{{ fl.url }}?download=1">{{ fl.name }}</a> {% endfor %}</div>
   {% elif st.kind == 'text' %}
-    {% if st.words %}<div class="words">{% for w in st.words %}<span class="chip" style="font-size:{{ 12 + (w.n * 10 / st.words[0].n)|round|int }}px">{{ w.word }} <small>{{ w.n }}</small></span>{% endfor %}</div>{% endif %}
+    {% if st.words %}<div class="words">{% for w in st.words %}<span class="chip" dir="auto" style="font-size:{{ 12 + (w.n * 10 / st.words[0].n)|round|int }}px">{{ w.word }} <small>{{ w.n }}</small></span>{% endfor %}</div>{% endif %}
     {% if st.repeated %}<p class="note">{{ L('إجابات متكررة:', 'Repeated answers:') }} {% for x in st.repeated %}«{{ x.text }}» ({{ x.n }}){{ '، ' if not loop.last }}{% endfor %}</p>{% endif %}
-    <details{{ ' open' if st.samples|length <= 6 }}><summary>{{ L('الإجابات', 'Answers') }} ({{ st.n }})</summary><ul class="txt-list">{% for r, t in st.samples %}<li><a href="{{ url_for('admin.response_view', rid=r.id) }}" class="muted small">#{{ r.id }}</a> {{ t }}</li>{% endfor %}</ul></details>
+    <details{{ ' open' if st.samples|length <= 6 }}><summary>{{ L('الإجابات', 'Answers') }} ({{ st.n }})</summary><ul class="txt-list">{% for r, t in st.samples %}<li><a href="{{ url_for('admin.response_view', rid=r.id) }}" class="muted small">#{{ r.id }}</a> <bdi>{{ t }}</bdi></li>{% endfor %}</ul></details>
   {% endif %}
 </div>
 {% endfor %}

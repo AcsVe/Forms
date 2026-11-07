@@ -38,7 +38,7 @@
   <th data-filter="select">{{ L('المصدر', 'Source') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
 {% for p in rows %}<tr data-row>
   <td class="chk">{{ bulk_item('people', p.id) }}</td>
-  <td><b>{{ p.name }}</b></td><td dir="ltr" class="ltr-cell">{{ p.email or '' }}</td><td dir="ltr" class="ltr-cell">{{ p.phone or '' }}</td>
+  <td><b dir="auto">{{ p.name }}</b></td><td dir="ltr" class="ltr-cell">{{ p.email or '' }}</td><td dir="ltr" class="ltr-cell">{{ p.phone or '' }}</td>
   <td>{% for g in p.groups %}<a class="chip" href="{{ url_for('admin.people', group=g.id) }}">{{ g.name }}</a>{% endfor %}</td>
   <td>{{ p.note or '' }}</td>
   <td>{% if p.active %}<span class="badge ok">{{ L('فعّال', 'Active') }}</span>{% else %}<span class="badge bad">{{ L('معطّل', 'Inactive') }}</span>{% endif %}</td>
@@ -73,7 +73,7 @@
   <th data-filter="select">{{ L('الحالة', 'Status') }}</th><th data-filter="select">{{ L('المصدر', 'Source') }}</th><th data-nosort class="act"></th></tr></thead><tbody>
 {% for g in groups %}<tr data-row>
   <td class="chk">{{ bulk_item('groups', g.id) }}</td>
-  <td><a href="{{ url_for('admin.people', group=g.id) }}"><b>{{ g.name }}</b></a></td><td>{{ g.description or '' }}</td>
+  <td><a href="{{ url_for('admin.people', group=g.id) }}"><b dir="auto">{{ g.name }}</b></a></td><td dir="auto">{{ g.description or '' }}</td>
   <td data-value="{{ counts.get(g.id, 0) }}"><a href="{{ url_for('admin.people', group=g.id) }}">{{ counts.get(g.id, 0) }}</a></td>
   <td>{% if g.active %}<span class="badge ok">{{ L('فعّالة', 'Active') }}</span>{% else %}<span class="badge bad">{{ L('معطّلة', 'Inactive') }}</span>{% endif %}</td>
   <td>{{ 'Microsoft' if g.source == 'microsoft' else L('محلية', 'Local') }}</td>
