@@ -35,7 +35,7 @@
   <td><a href="{{ url_for('admin.analysis', fid=m.form.id) }}">{{ m.form.title_for(lang) }}</a></td><td>{{ m.form.category or '' }}</td><td>{{ status_badge(m.form) }}</td>
   <td data-value="{{ m.n }}">{{ m.n }}</td><td data-value="{{ m.views }}">{{ m.views }}</td><td data-value="{{ m.completion or 0 }}">{{ m.completion if m.completion is not none else '—' }}</td>
   <td data-value="{{ m.avg_duration or 0 }}">{{ m.avg_duration or '—' }}</td><td data-value="{{ m.avg_score or 0 }}">{{ m.avg_score if m.avg_score is not none else '—' }}</td>
-  <td data-value="{{ m.per_day }}">{{ m.per_day }}</td><td data-value="{{ m.mobile_pct }}">{{ m.mobile_pct }}</td><td data-value="{{ m.questions }}">{{ m.questions }}</td><td class="small">{{ m.last|local }}</td></tr>{% endfor %}
+  <td data-value="{{ m.per_day }}">{{ m.per_day }}</td><td data-value="{{ m.mobile_pct }}">{{ m.mobile_pct }}</td><td data-value="{{ m.questions }}">{{ m.questions }}</td><td class="small"><span dir="ltr">{{ m.last|local }}</span></td></tr>{% endfor %}
 </tbody></table></div></div>
 
 <div class="grid2">

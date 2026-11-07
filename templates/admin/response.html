@@ -54,7 +54,7 @@
       <dl class="meta">
         {% if r.email %}<dt>{{ L('البريد الموثّق', 'Verified email') }}</dt><dd dir="ltr">{{ r.email }}</dd>{% endif %}
         {% for fd in f.s('filler_fields') or [] %}<dt>{{ fd.label }}</dt><dd>{{ (r.filler or {}).get(fd.key, '—') }}</dd>{% endfor %}
-        <dt>{{ L('وقت الإرسال', 'Submitted') }}</dt><dd>{{ r.submitted_at|local }}</dd>
+        <dt>{{ L('وقت الإرسال', 'Submitted') }}</dt><dd><span dir="ltr">{{ r.submitted_at|local }}</span></dd>
         <dt>{{ L('مدة الإجابة', 'Time taken') }}</dt><dd>{{ r.duration_sec|dur }}</dd>
         <dt>{{ L('اللغة', 'Language') }}</dt><dd>{{ r.lang }}</dd>
       </dl></div>

@@ -26,7 +26,7 @@
 </div>
 <div class="f-card mine" id="mine" hidden>
   <h2>{{ L('إجاباتك', 'Your answers') }}</h2>
-  <p class="muted small">{{ L('رقم الإجابة', 'Response number') }}: {{ r.id }} · {{ r.submitted_at|local }}</p>
+  <p class="muted small">{{ L('رقم الإجابة', 'Response number') }}: {{ r.id }} · <span dir="ltr">{{ r.submitted_at|local }}</span></p>
   {% for q in f.questions if q.type not in ['section', 'statement', 'hidden'] and (r.answers or {}).get(q.id) not in [none, '', [], {}] %}
   {% set d = detail.get(q.id) %}
   <div class="mine-row{{ ' ok' if d and d[2] }}{{ ' bad' if d and d[2] == false }}"><b>{{ qtitle(q, lang) }}</b><div>{{ answer_text(q, r.answers or {}, lang) }}</div>

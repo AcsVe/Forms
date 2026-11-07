@@ -33,7 +33,7 @@
 <tr data-row>
   <td class="chk">{{ bulk_item('responses', r.id) }}</td>
   <td data-value="{{ r.id }}"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.id }}</a></td>
-  <td class="small nowrap"><a href="{{ url_for('admin.response_view', rid=r.id) }}">{{ r.submitted_at|local }}</a></td>
+  <td class="small nowrap"><a href="{{ url_for('admin.response_view', rid=r.id) }}"><span dir="ltr">{{ r.submitted_at|local }}</span></a></td>
   <td>{{ r.who }}{% if r.email and r.who != r.email %}<div class="muted small" dir="ltr">{{ r.email }}</div>{% endif %}</td>
   {% for q in cols %}<td class="ans" dir="auto">{{ answer_text(q, r.answers or {}, lang)[:120] }}</td>{% endfor %}
   {% if f.s('quiz') %}<td data-value="{{ r.percent if r.percent is not none else '' }}">{{ r.percent if r.percent is not none else '—' }}</td>{% endif %}

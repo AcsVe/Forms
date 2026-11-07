@@ -64,7 +64,7 @@
     </tbody></table></div></div>
   <div class="card"><h2>{{ L('أحدث الإجابات', 'Latest responses') }}</h2>
     {% if recent %}<ul class="list-links">{% for r in recent %}<li><a href="{{ url_for('admin.response_view', rid=r.id) }}"><b>{{ fmap[r.form_id].title_for(lang) if r.form_id in fmap else '' }}</b>
-      <span class="muted small">— {{ r.submitted_at|local }} · {{ r.device|device }} · {{ r.browser|ua }}{% if r.who %} · <bdi>{{ r.who }}</bdi>{% endif %}</span></a></li>{% endfor %}</ul>
+      <span class="muted small">— <span dir="ltr">{{ r.submitted_at|local }}</span> · {{ r.device|device }} · {{ r.browser|ua }}{% if r.who %} · <bdi>{{ r.who }}</bdi>{% endif %}</span></a></li>{% endfor %}</ul>
     {% else %}<p class="muted">{{ L('لا توجد إجابات بعد.', 'No responses yet.') }}</p>{% endif %}</div>
 </div>
 {% endblock %}
