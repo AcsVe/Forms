@@ -24,7 +24,7 @@
   <h3 class="sub-h">{{ L('سجل البريد', 'Mail log') }}</h3>
   <div class="dt-wrap"><table data-table><thead><tr><th>{{ L('الوقت', 'Time') }}</th><th data-filter="select">{{ L('النوع', 'Kind') }}</th><th data-filter="text">{{ L('إلى', 'To') }}</th><th data-filter="select">{{ L('الحالة', 'Status') }}</th></tr></thead><tbody>
   {% set kinds = {'invite': L('دعوة', 'Invitation'), 'reminder': L('تذكير', 'Reminder'), 'code': L('رمز دخول', 'Sign-in code'), 'notify': L('إشعار بإجابة', 'New response'), 'copy': L('نسخة للمستجيب', 'Copy to respondent'), 'reset': L('استعادة كلمة المرور', 'Password reset'), 'test': L('تجربة', 'Test')} %}
-  {% for l in logs %}<tr><td class="small nowrap">{{ l.created_at|local }}</td><td>{{ kinds.get(l.kind, l.kind or '') }}</td><td class="small ltr-cell" dir="ltr">{{ l.recipients }}</td>
+  {% for l in logs %}<tr><td class="small nowrap"><span dir="ltr">{{ l.created_at|local }}</span></td><td>{{ kinds.get(l.kind, l.kind or '') }}</td><td class="small ltr-cell" dir="ltr">{{ l.recipients }}</td>
     <td>{% if l.status == 'sent' %}<span class="badge ok">{{ L('أُرسلت', 'Sent') }}</span>{% else %}<span class="badge bad">{{ L('لم تُرسل', 'Not sent') }}</span>{% endif %}</td></tr>
   {% else %}<tr><td colspan="4" class="muted">{{ L('لا رسائل بعد.', 'No messages yet.') }}</td></tr>{% endfor %}</tbody></table></div>
 </div>

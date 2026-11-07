@@ -117,6 +117,10 @@ AUDIT_JS = r"""() => {
         && !el.closest('code,pre,kbd,[dir=ltr] [dir=ltr],input,textarea')) {
       const k = 'd' + full.slice(0, 40); if (!seen.has(k)) { seen.add(k); out.bidi.push(`${s.direction} «${full.slice(0, 50)}» ${el.tagName}.${el.className}`.slice(0, 140)); }
     }
+    // تاريخ ووقت بلا حروف (2026-11-06 18:05) داخل عنصر من اليمين لليسار: يظهر الوقت قبل التاريخ
+    const own2 = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim();
+    if (s.direction === 'rtl' && /^\d{4}-\d{2}-\d{2}[ T]\d{1,2}:\d{2}/.test(own2) && s.unicodeBidi !== 'plaintext')
+      { const k = 't' + own2; if (!seen.has(k)) { seen.add(k); out.bidi.push(`rtl «${own2.slice(0, 40)}» ${el.tagName}.${el.className}`); } }
     if (fs < 13 && !el.closest('.dt-sort,.chip small,.words small,sup')) { const k = 's' + txt; if (!seen.has(k)) { seen.add(k); out.small.push(`${fs}px «${txt}» ${el.tagName}.${el.className}`.slice(0, 120)); } }
   });
   document.querySelectorAll('.card, .f-card, .kpi').forEach((card) => {

@@ -18,7 +18,7 @@
   <td>{{ L('مسؤول', 'Administrator') if u.is_admin else L('محرّر', 'Editor') }}</td>
   <td>{% if u.active %}<span class="badge ok">{{ L('فعّال', 'Active') }}</span>{% else %}<span class="badge bad">{{ L('معطّل', 'Inactive') }}</span>{% endif %}</td>
   <td data-value="{{ counts.get(u.id, 0) }}"><a href="{{ url_for('admin.forms', owner=u.id) }}">{{ counts.get(u.id, 0) }}</a></td>
-  <td class="small">{{ u.last_login_at|local }}</td>
+  <td class="small"><span dir="ltr">{{ u.last_login_at|local }}</span></td>
   <td class="act"><button type="button" class="sm ghost" data-edit='{{ {"id": u.id, "username": u.username, "name": u.name or "", "email": u.email or "", "role": u.role}|tojson }}'>{{ L('تعديل', 'Edit') }}</button></td>
 </tr>{% endfor %}
 </tbody></table></div></div>

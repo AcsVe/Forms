@@ -35,8 +35,8 @@
     {% set labels = {'responded': (L('أجاب', 'Answered'), 'ok'), 'opened': (L('فتح ولم يُرسل', 'Opened'), 'warn'), 'sent': (L('أُرسلت الدعوة', 'Invited'), ''), 'pending': (L('لم تُرسل بعد', 'Not sent yet'), ''), 'failed': (L('تعذّر الإرسال', 'Failed'), 'bad')} %}
     <td><span class="badge {{ labels[i.status][1] }}">{{ labels[i.status][0] }}</span></td>
     <td data-value="{{ i.send_count }}">{{ i.send_count }}</td>
-    <td class="small nowrap">{{ i.last_sent_at|local }}</td>
-    <td class="small nowrap">{% if i.response_id %}<a href="{{ url_for('admin.response_view', rid=i.response_id) }}">{{ i.responded_at|local }}</a>{% endif %}</td>
+    <td class="small nowrap"><span dir="ltr">{{ i.last_sent_at|local }}</span></td>
+    <td class="small nowrap">{% if i.response_id %}<a href="{{ url_for('admin.response_view', rid=i.response_id) }}"><span dir="ltr">{{ i.responded_at|local }}</span></a>{% endif %}</td>
     <td class="act"><button type="button" class="sm ghost" data-copy="{{ link(f, i) }}" title="{{ L('نسخ الرابط الشخصي', 'Copy the personal link') }}"><i class="fa-solid fa-link"></i> {{ L('الرابط', 'Link') }}</button></td>
   </tr>{% endfor %}</tbody></table></div>
   {% else %}<div class="empty"><i class="fa-solid fa-user-plus"></i><p>{{ L('لا يوجد مدعوون بعد. اختر من النموذج المجاور.', 'Nobody is invited yet. Choose from the form beside this list.') }}</p></div>{% endif %}
