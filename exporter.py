@@ -45,8 +45,9 @@ def columns(form, lang='ar'):
                  (L('النسبة %', 'Percent'), lambda r: r.percent if r.percent is not None else '')]
     cols += [(L('المدة (ثانية)', 'Duration (s)'), lambda r: r.duration_sec or ''),
              (L('الجهاز', 'Device'), lambda r: r.device or ''),
+             (L('طراز الجهاز', 'Device model'), lambda r: (r.meta or {}).get('model', '')),
              (L('المتصفح', 'Browser'), lambda r: r.browser or ''),
-             (L('النظام', 'OS'), lambda r: r.os or ''),
+             (L('النظام', 'OS'), lambda r: ' '.join(x for x in (r.os or '', (r.meta or {}).get('os_version', '')) if x)),
              (L('عنوان الشبكة', 'Network address'), lambda r: r.ip or ''),
              (L('اللغة', 'Language'), lambda r: r.lang or ''),
              (L('الشاشة', 'Screen'), lambda r: (r.meta or {}).get('screen', '')),

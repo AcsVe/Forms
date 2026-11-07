@@ -56,5 +56,49 @@ def parse(ua):
     return {'browser': browser, 'version': version, 'os': os_name, 'device': device}
 
 
+_ANDROID_MODEL = re.compile(r'android [\d.]+;(?: [a-z]{2}[-_][a-z]{2};)? ([^;)]+?)(?: build/|\))', re.I)
+
+
+def model(ua, hint=''):
+    """طراز الجهاز: من تلميح المتصفح (Chrome وEdge على أندرويد) وإلا من User-Agent.
+    المتصفحات لا تكشف اسم الجهاز ولا عنوان MAC، وآيفون وآيباد لا يذكران الطراز الدقيق."""
+    hint = (hint or '').strip()
+    if hint:
+        return hint[:100]
+    ua = ua or ''
+    u = ua.lower()
+    for k, name in (('iphone', 'iPhone'), ('ipad', 'iPad'), ('ipod', 'iPod')):
+        if k in u:
+            return name
+    m = _ANDROID_MODEL.search(ua)
+    if m and m.group(1).strip().lower() not in ('k', 'mobile', 'linux', 'wv', 'tablet'):
+        return m.group(1).strip()[:100]
+    if 'macintosh' in u:
+        return 'Mac'
+    if 'cros' in u:
+        return 'Chromebook'
+    return ''
+
+
+def os_version(ua, os_name, hint=''):
+    """إصدار النظام: Windows 10 أو 11 يُعرف من تلميح المتصفح فقط (User-Agent يذكر 10 للاثنين)."""
+    hint = (hint or '').strip()
+    major = hint.split('.')[0] if hint else ''
+    if os_name == 'Windows':
+        if major.isdigit():
+            return '11' if int(major) >= 13 else '10' if int(major) > 0 else ''
+        return ''
+    if major.isdigit() and int(major) > 0 and os_name in ('Android', 'macOS', 'ChromeOS'):
+        return hint[:20] if os_name == 'ChromeOS' else major
+    u = (ua or '').lower()
+    if os_name == 'Android':
+        m = re.search(r'android (\d+(?:\.\d+)?)', u)
+        return m.group(1) if m else ''
+    if os_name == 'iOS':
+        m = re.search(r'os (\d+)[_.](\d+)', u)
+        return f'{m.group(1)}.{m.group(2)}' if m else ''
+    return ''
+
+
 DEVICE_LABELS = {'mobile': ('هاتف', 'Phone'), 'tablet': ('جهاز لوحي', 'Tablet'), 'desktop': ('حاسوب', 'Computer'),
                  'bot': ('برنامج آلي', 'Bot')}

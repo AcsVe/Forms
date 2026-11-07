@@ -261,6 +261,12 @@ def submit(slug):
     meta = {k: str(meta_in.get(k))[:200] for k in ('screen', 'viewport', 'tz', 'lang', 'platform', 'referrer', 'touch', 'source')
             if meta_in.get(k) not in (None, '')}
     meta['browser_version'] = info['version']
+    dev_model = uaparse.model(ua, str(meta_in.get('model') or '')[:100])
+    os_ver = uaparse.os_version(ua, info['os'], str(meta_in.get('os_version') or '')[:20])
+    if dev_model:
+        meta['model'] = dev_model
+    if os_ver:
+        meta['os_version'] = os_ver
     st = session.pop(f'st_{f.slug}', None)
     now = datetime.utcnow()
     dur = int(time.time() - st) if st else None

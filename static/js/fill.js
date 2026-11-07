@@ -421,6 +421,15 @@
   // ── الإرسال ────────────────────────────────────────────────────────────
   const errBox = document.getElementById('formErr');
   let sending = false;
+  // طراز الجهاز وإصدار النظام: Chrome وEdge يعطيانهما عند الطلب؛ غيرهما يُكتفى فيه بما يقرؤه الخادم.
+  const HINTS = { model: '', os_version: '' };
+  try {
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      navigator.userAgentData.getHighEntropyValues(['model', 'platformVersion'])
+        .then((v) => { HINTS.model = (v.model || '').slice(0, 100); HINTS.os_version = (v.platformVersion || '').slice(0, 20); })
+        .catch(() => { /* لا شيء */ });
+    }
+  } catch (_) { /* لا شيء */ }
   async function send(timeout) {
     if (sending) return;
     const w = refresh();
@@ -433,7 +442,7 @@
     fd.append('payload', JSON.stringify({ answers, parent: D.parent, hp: document.getElementById('hp').value, timeout: !!timeout,
       meta: { screen: `${screen.width}x${screen.height}`, viewport: `${innerWidth}x${innerHeight}`, tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
         lang: navigator.language || '', platform: (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '',
-        referrer: document.referrer.slice(0, 200), touch: ('ontouchstart' in window) ? '1' : '0', source: params.get('utm_source') || params.get('src') || '' } }));
+        referrer: document.referrer.slice(0, 200), touch: ('ontouchstart' in window) ? '1' : '0', source: params.get('utm_source') || params.get('src') || '', model: HINTS.model, os_version: HINTS.os_version } }));
     Object.entries(FILES).forEach(([qid, fs]) => { if (w.shown.has(qid)) fs.forEach((f) => fd.append('file__' + qid, f, f.name)); });
     try {
       const r = await fetch(D.submit_url + (D.preview ? '?preview=1' : ''), { method: 'POST', body: fd, credentials: 'same-origin' });
