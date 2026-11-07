@@ -94,11 +94,15 @@ AUDIT_JS = r"""() => {
     if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return;
     const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
     if (!own) return;
-    const s = getComputedStyle(el); if (s.visibility === 'hidden' || Number(s.opacity) < 0.3) return;
+    const s = getComputedStyle(el); if (s.visibility === 'hidden') return;
+    // الشفافية الفعلية = حاصل ضرب شفافية العنصر وكل آبائه (المكتبات تُبهت الأب لا النص نفسه)
+    let op = 1; for (let n = el; n; n = n.parentElement) op *= Number(getComputedStyle(n).opacity);
+    if (op < 0.15) return;
     if (el.closest('canvas,svg,.chart-box,option,select')) return;
     const fs = parseFloat(s.fontSize), fw = Number(s.fontWeight) || 400;
     const txt = el.textContent.trim().slice(0, 40);
-    const fg = lum(s.color), bg = bgOf(el);
+    let fg = lum(s.color); const bg = bgOf(el);
+    if (fg && bg !== null && op < 1) fg = { l: fg.l * op + bg * (1 - op), a: fg.a };   // تقريب: مزج الإضاءة مع الخلفية
     if (fg && bg !== null && !el.matches(':disabled') && !el.closest(':disabled,[disabled]')) {
       const ratio = (Math.max(fg.l, bg) + 0.05) / (Math.min(fg.l, bg) + 0.05);
       const large = fs >= 24 || (fs >= 18.6 && fw >= 700);
