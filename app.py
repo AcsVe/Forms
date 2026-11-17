@@ -99,7 +99,9 @@ def create_app(test_config=None):
 
     # اشتراك النسخة المستضافة (ملف الاشتراكات المشترك أو LICENSE_UNTIL في .env) — license.py
     from license import install as _license
-    _license(app, open_endpoints={'admin.login', 'admin.logout', 'admin.forgot', 'admin.reset', 'set_lang',
+    from brand_icon import install as _favicon
+    _favicon(app)
+    _license(app, open_endpoints={'brand_favicon', 'admin.login', 'admin.logout', 'admin.forgot', 'admin.reset', 'set_lang',
                                   'healthz', 'favicon'})
 
     @app.context_processor
