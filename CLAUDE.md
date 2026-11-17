@@ -11,10 +11,11 @@
 | المستودع | `AcsVe/Forms` |
 | التقنية | Flask + Waitress (`serve.py`)، واجهة SAS (`templates/admin/base.html`، `static/css/admin.css` + `forms-admin.css`) |
 | القاعدة | SQLite `dataorms.db` (والملفات المرفوعة داخلها في `media_files`) |
-| الاختبار | `python -m pytest -q tests/` (43 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` و`python tests/ui_audit.py` (Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً؛ لا يقرآن `.env` الحقيقي: `FORMS_NO_DOTENV=1`) |
+| الاختبار | `python -m pytest -q tests/` (50 اختباراً) ثم المتصفح: `python tests/e2e_browser.py` و`python tests/ui_audit.py` (Chrome المثبّت، `E2E_CHANNEL=msedge` بديلاً؛ لا يقرآن `.env` الحقيقي: `FORMS_NO_DOTENV=1`) |
 | الدليل | `docs/Forms.md` |
 | الفحص الآلي | `.github/workflows/checks.yml`: الاختبارات وتجربة المتصفح وفحص المظهر مع كل رفع إلى `main` (Python 3.10)؛ الفشل يصل بريداً |
 
+- **اشتراك النسخة المستضافة:** ملف مشترك `LICENSE_FILE` + `LICENSE_ID` تكتبه صفحة الاشتراكات في بوابة العميل، أو `LICENSE_UNTIL` في `.env` (`license.py`). بعد الإيقاف تُعرض «انتهى الاشتراك» (403) على كل الصفحات ما عدا الدخول والخروج واستعادة كلمة المرور؛ أي مسار جديد يجب أن يبقى مفتوحاً يُضاف إلى القائمة المفتوحة في `app.py`.
 - **ترحيل القاعدة:** `models.py: MIGRATIONS` — كل عمود جديد يُضاف إلى القائمة (جدول، عمود، تعريف SQL) فيُضاف عند الإقلاع دون مسح بيانات. أول مدير يُنشأ من `ADMIN_USER`/`ADMIN_PASS` في `.env` عند أول تشغيل، والقوالب الجاهزة مرة واحدة (`seed_templates.py`).
 - **بنية النموذج** كاملة في `forms.schema` (JSON): لكل سؤال معرّف نصي ثابت تُربط به الإجابات (`responses.answers`). المنطق (شروط الإظهار والتفرّع والتحقق والتصحيح) في `schema.py`، ونسخته في المتصفح `static/js/fill.js: walk()` — **أي تعديل في أحدهما يُطبَّق في الآخر**، والخادم يعيد التحقق دائماً ولا يحفظ إجابات الأسئلة المخفية.
 - **لغة المحتوى = لغة النموذج** (`settings.lang`) لا لغة الواجهة: في `static/js/builder.js` الدالة `FL` للنصوص الافتراضية و`FDIR` لاتجاه مربعات الكتابة، و`fixDefaults()` يحوّل النصوص الافتراضية غير المعدّلة عند فتح المحرّر وعند تغيير اللغة. `T` لنصوص واجهة الإدارة فقط.
