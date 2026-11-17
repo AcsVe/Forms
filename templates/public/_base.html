@@ -7,7 +7,7 @@
 {% set acc = s.get('accent') if s.get('accent') else '#0C67EC' %}
 <meta name="theme-color" content="{{ acc }}">
 <meta name="robots" content="noindex">
-{% if f and not brand_is_icon %}<link rel="icon" href="{{ brand_logo_url }}">{% else %}<link rel="icon" href="{{ url_for('static', filename='brand/system.svg') }}" type="image/svg+xml">{% endif %}
+{% if f and not brand_is_icon %}<link rel="icon" href="{{ brand_logo_url }}">{% elif favicon_url %}<link rel="icon" href="{{ favicon_url }}" type="image/png">{% else %}<link rel="icon" href="{{ url_for('static', filename='brand/system.svg') }}" type="image/svg+xml">{% endif %}
 {% if f and not f.is_template %}
 {# معاينة الرابط عند مشاركته في تطبيقات المراسلة ووسائل التواصل الاجتماعي (WhatsApp وMicrosoft Teams وFacebook وX وLinkedIn) #}
 {% set _base = (config.get('BASE_URL') or request.host_url).rstrip('/') %}
