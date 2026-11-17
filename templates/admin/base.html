@@ -4,6 +4,7 @@
 {% include 'admin/_head.html' %}
 <title>{% block title %}{{ L('لوحة الإدارة', 'Admin') }}{% endblock %} · {{ L('النماذج والاستبيانات', 'Forms & Surveys') }}</title>
 <script src="{{ asset('js/table.js') }}" defer></script>
+<script src="{{ asset('js/update-notice.js') }}" data-version="{{ app_version }}" data-url="/api/app-version" defer></script>
 <script>
 // نص البحث مع مراعاة العربية: أ/إ/آ←ا، ة←ه، ى←ي، بلا تشكيل.
 window.normText = (v) => String(v || '').toLowerCase()
