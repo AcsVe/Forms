@@ -104,6 +104,8 @@ def create_app(test_config=None):
     # حماية مصدر صفحات الإدارة: HTML مشفّر + منع الزر الأيمن وF12 وعرض المصدر — انظر page_shield.py
     from page_shield import install as _shield
     _shield(app)
+    from app_version import install as _app_version
+    _app_version(app, os.path.dirname(os.path.abspath(__file__)))     # تنبيه الإدارة بصدور تحديث
     from brand_icon import url as _custom_icon
     _license(app, open_endpoints={'brand_favicon', 'admin.login', 'admin.logout', 'admin.forgot', 'admin.reset', 'set_lang',
                                   'healthz', 'favicon'})
